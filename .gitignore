@@ -3,3 +3,7 @@
 
 # Ignore the doc folder
 doc
+
+# ignore .files
+.*
+!.gitignore
