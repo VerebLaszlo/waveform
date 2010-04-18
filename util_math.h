@@ -6,4 +6,4 @@
  * @date 2010.04.06.
  */
 
- #define SQR(a) (a)*(a)
+#define SQR(a) (a)*(a)
