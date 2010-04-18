@@ -1,5 +1,5 @@
 /*
- * @file math_util.h
+ * @file util_math.h
  *		Containes own mathemathical function declarations.
  * @author László Veréb
  * @version 0.1

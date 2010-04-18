@@ -19,25 +19,10 @@
 #ifndef WAVEFORM_H_
 #define WAVEFORM_H_
 
-//@{@name LALInspiral.hu
-//#include <lal/LALInspiral.hu>
-#define LAL_PI 3.14
-#define EulerC 0.577215665
-
-/**
- *		The enumeration contains of the PN orders.
- */
-typedef enum {
-  LAL_PNORDER_NEWTONIAN,
-  LAL_PNORDER_HALF,
-  LAL_PNORDER_ONE,
-  LAL_PNORDER_ONE_POINT_FIVE,
-  LAL_PNORDER_TWO,
-  LAL_PNORDER_TWO_POINT_FIVE,
-  LAL_PNORDER_THREE,
-  LAL_PNORDER_THREE_POINT_FIVE,
-  LAL_PNORDER_PSEUDO_FOUR
- } LALPNOrde;	//@}
+#include <lal/LALInspiral.hu>
+#ifndef _LALINSPIRAL_H
+#include "lal_inspiral.h"
+#endif
 
 /**
  *		The structure contains the coefficients for calculating the derivatives of the evolving quantities.
