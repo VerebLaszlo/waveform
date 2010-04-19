@@ -19,10 +19,12 @@
 #ifndef WAVEFORM_H_
 #define WAVEFORM_H_
 
-#include <lal/LALInspiral.hu>
+#include <math.h>
+//#include <lal/LALInspiral.hu>
 #ifndef _LALINSPIRAL_H
 #include "lal_inspiral.h"
 #endif
+#include "util_math.h"
 
 /**
  *		The structure contains the coefficients for calculating the derivatives of the evolving quantities.

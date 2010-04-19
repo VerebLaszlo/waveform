@@ -7,3 +7,6 @@ doc
 # ignore .files
 .*
 !.gitignore
+
+# eclipse egy folderja
+Debug
