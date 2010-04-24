@@ -2,7 +2,6 @@
  * @file waveform.c
  *		Containes the function definition to create GWforms.
  * @author László Veréb
- * @version 0.1
  * @date 2010.04.06.
  */
 

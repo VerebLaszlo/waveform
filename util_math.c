@@ -1,11 +1,31 @@
 /*
- * util_math.c
- *
- *  Created on: 2010.04.19.
- *      Author: vereb
+ * @file util_math.c
+ *		Contains own mathematical function definitions.
+ * @author László Veréb
+ * @date 2010.04.19.
  */
 
 #include "util_math.h"
+
+double sqr(double a) {
+	return a * a;
+}
+
+size_t multi_Min(size_t array[], size_t length) {
+	size_t i, min = array[0];
+	for (i = 1; i < length; i++) {
+		min = fmin(min, array[i]);
+	}
+	return min;
+}
+
+size_t multi_Max(size_t array[], size_t length) {
+	size_t i, max = array[0];
+	for (i = 1; i < length; i++) {
+		max = fmax(min, array[i]);
+	}
+	return max;
+}
 
 double scalar_Product3(double a1[3], double a2[3]) {
 	double scalar = 0.;

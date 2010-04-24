@@ -1,8 +1,8 @@
 /*
- * util_file.c
- *
- *  Created on: 2010.04.19.
- *      Author: vereb
+ * @file util_file.c
+ *		Contains own function definitions for file operations.
+ * @author László Veréb
+ * @date 2010.04.19.
  */
 
 #include "util_file.h"

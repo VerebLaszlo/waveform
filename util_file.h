@@ -1,8 +1,8 @@
 /*
- * util_file.h
- *
- *  Created on: 2010.04.19.
- *      Author: vereb
+ * @file util_file.h
+ *		Containes own fonctions for file operations.
+ * @author László Veréb
+ * @date 2010.04.19.
  */
 
 #ifndef UTIL_FILE_H_

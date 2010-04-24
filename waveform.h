@@ -2,7 +2,6 @@
  * @file waveform.h
  *		Containes the enums structs and function to create GWforms.
  * @author László Veréb
- * @version 0.1
  * @date 2010.04.06.
  */
 
@@ -65,8 +64,10 @@ typedef struct waveform_Params_Tag {
 	double inclination; ///< inclination of the system
 	double phi; ///< the initial phase	//@}
 	//@{@name other parameters
-	double initial_Freq; ///< the initial frequency of the GW
-	double maximal_Freq; ///< the maximal frequency of the GW
+	double lower_Freq; ///< the detectors sensitivityband's lower border
+	double upper_Freq; ///< the detectors sensitivityband's lower border
+	double cutoff_Freq;	///< the highest detectable frequency of the GW
+	double chirp_Time;	///< \todo dokot írni
 	double sampling_Freq; ///< sampling frequency
 	double sampling_Time; ///< sampling time
 	LALPNOrder order; ///< the Post_Newtonian order of the GW generation
