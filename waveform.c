@@ -33,7 +33,7 @@ void fill_Coefficients(waveform_Params * const params) {
 				* LAL_PI;
 	case LAL_PNORDER_THREE:
 		params->coeff.domega[LAL_PNORDER_THREE] = (16447322263. / 139708800.
-				- EulerC * 1712. / 105. + SQR(LAL_PI) * 16. / 3.)
+				- LAL_GAMMA * 1712. / 105. + SQR(LAL_PI) * 16. / 3.)
 				+ (-273811877. / 1088640. + SQR(LAL_PI) * 451. / 48. - 88.
 						* 1039. / 3. / 4620.) * params->eta + etaPow2 * 541.
 				/ 896. - etaPow3 * 5605. / 2592.;

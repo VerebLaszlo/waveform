@@ -8,6 +8,10 @@
 #ifndef UTIL_FILE_H_
 #define UTIL_FILE_H_
 
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+
 /**
  *		The function is a secure interface for the system function fopen.
  * @param[in] name	: filename to open
@@ -22,7 +26,7 @@ FILE * sfopen(const char* const name, const char* const mode);
  * @param[in] name	: filename to open
  * @return	pointer to the opened file
  */
-FILE * sfopen_read(char *name);
+FILE * sfopen_read(const char *name);
 
 /**
  *		The function is a secure interface for the system function fopenwith
@@ -30,7 +34,7 @@ FILE * sfopen_read(char *name);
  * @param[in] name	: filename to open
  * @return	pointer to the opened file
  */
-FILE * sfopen_write(char *name);
+FILE * sfopen_write(const char *name);
 
 /**
  *		The function is a secure interface for the system function fopenwith
@@ -38,6 +42,6 @@ FILE * sfopen_write(char *name);
  * @param[in] name	: filename to open
  * @return	pointer to the opened file
  */
-FILE * sfopen_append(char *name);
+FILE * sfopen_append(const char *name);
 
 #endif /* UTIL_FILE_H_ */

@@ -6,7 +6,7 @@
 #define _LALINSPIRAL_H
 
 #define LAL_PI 3.14
-#define EulerC 0.577215665
+#define LAL_GAMMA 0.577215665
 
 /**
  *		The enumeration contains of the PN orders.

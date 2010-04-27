@@ -8,6 +8,9 @@
 #ifndef UTIL_MATH_H
 #define UTIL_MATH_H
 
+#include <math.h>
+#include <stdlib.h>
+
 /**
  *		The macrofunction returns the square of the argument.
  * @param[in] a	 : the number

@@ -75,9 +75,9 @@ typedef struct waveform_Params_Tag {
 } waveform_Params;
 
 /**
- *		The function fills the @link coefficients @endlink structure with the needed
+ *		The function fills the coefficients structure with the needed
  *		coefficients for generating the waveform up to the given PN-order.
- * @warning asnuming that every member of the @link params @endlink is set.
+ * @warning asnuming that every member of the params is set.
  * @param[in,out]	params	: the generator's parameters
  */
 void fill_Coefficients(waveform_Params * const params);

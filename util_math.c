@@ -22,7 +22,7 @@ size_t multi_Min(size_t array[], size_t length) {
 size_t multi_Max(size_t array[], size_t length) {
 	size_t i, max = array[0];
 	for (i = 1; i < length; i++) {
-		max = fmax(min, array[i]);
+		max = fmax(max, array[i]);
 	}
 	return max;
 }
