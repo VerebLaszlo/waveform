@@ -36,4 +36,11 @@ void interface(LALStatus *status, CoherentGW *wave_out,
 void fill_Params(LALStatus *status, InspiralTemplate *params,
 		PPNParamStruc *ppnParams, waveform_Params *wave);
 
+/**		The function allocates memory for the waveform.
+ * @param[in,out]	status	: LAL universal status structure
+ * @param[in]		length	: the length of the waveform
+ * @param[out]		wave	: pointer to the allocated waveform
+ */
+void allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *wave);
+
 #endif /* WAVEFOMR_INTERFACE_H */
