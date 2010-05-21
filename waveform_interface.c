@@ -1,20 +1,23 @@
-/*
- * waveform_interface.c
- *
- *  Created on: 2010.05.07.
- *      Author: vereb
+/**
+ * @file waveform_interface.c
+ *		Containes the interfaces to the user and to the other part of the code.
+ * @author László Veréb
+ * @date 2010.05.21.
+ * \todo LE KELL TISZTÍTANI!!!!!!!!!!!!!!!!!!!
  */
 
 #include "waveform_interface.h"
 
-REAL8 lapultsag[2];
+REAL8 lapultsag[2];	///< \bug át kell rakni a paraméterekhez
 
 NRCSID (WAVEFORM_INTERFACEC, "$Id$");
 
 void interface(LALStatus *status, CoherentGW *waveform_out,
 		InspiralTemplate *params, PPNParamStruc *ppnParams) {
+
+	// variable declaration and initialization
 	UINT4 count, i;
-	REAL8 phiC;/* phase at coalescence */
+	REAL8 phiC;	///< phase at coalescence
 	InspiralInit paramsInit;
 
 	CreateVectorSequenceIn in;
@@ -41,6 +44,7 @@ void interface(LALStatus *status, CoherentGW *waveform_out,
 	}
 
 	/* Allocate the waveform structures. */
+	/// \todo a memóriafoglalást egy külön függvénybe kell átrakni
 	if ((waveform_out->h = (REAL4TimeVectorSeries *) LALMalloc(
 			sizeof(REAL4TimeVectorSeries))) == NULL) {
 		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
@@ -105,13 +109,16 @@ void interface(LALStatus *status, CoherentGW *waveform_out,
 	wave.pol = waveform_out->shift->data;
 	wave.freq = waveform_out->f->data;
 	wave.phase = waveform_out->phi->data;
-	/* Call the engine function */
+
+	// filling the parameters
 	fill_Params(status->statusPtr, params, ppnParams, &wave_Params);
 	CHECKSTATUSPTR(status);
 #if DEBUG==1
 	fprintf(stderr, "generator_start\n");
 	fflush(stderr);
 #endif
+
+	// calling the engine function
 	generator(status->statusPtr, &wave_Params, &wave);
 	wave.h->data->vectorLength = wave.a->data->vectorLength = wave.length;
 	wave.pol->length = wave.freq->length = wave.phase->length = wave.length;

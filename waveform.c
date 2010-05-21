@@ -14,7 +14,7 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 	INITSTATUS(status, "fill_Coefficients", WAVEFORMC);
 	ATTATCHSTATUSPTR(status);
 
-	// variable definitions and initializations
+	// variable declaration and initialization
 	REAL8 thetahat = 1039. / 4620.;
 	REAL8 spin_MPow2[2];
 	REAL8 m_m[2] = { params->mass[1] / params->mass[0], params->mass[0]
@@ -22,7 +22,7 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 	REAL8 piPow2 = SQR(LAL_PI);
 	REAL8 etaPow2 = SQR(params->eta);
 	REAL8 etaPow3 = etaPow2 * params->eta;
-	INT2 i;	// index
+	INT2 i;
 	for (i = 0; i < 2; i++) {
 		spin_MPow2[i] = params->chi_Amp[i] * SQR(params->mass[i])
 				/SQR(params->total_Mass);
@@ -32,7 +32,6 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 	params->coeff.domega_Global = params->eta * 96. / 5.;
 	for (i = LAL_PNORDER_NEWTONIAN; i < LAL_PNORDER_PSEUDO_FOUR; i += 2) {
 		params->coeff.MECO[i] = -5. * params->eta * (REAL8) (i + 2) / 3.;
-		//params->coeff.MECO[i + 1] = 0.;		// \test
 	}
 	switch (params->order) {
 		case LAL_PNORDER_THREE_POINT_FIVE:
@@ -106,7 +105,7 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	waveform_Params *params = param;
 
-	// variable declarations and initializations
+	// variable declaration and initialization
 	INT2 i, j;	// indexes
 	for (i = OMEGA; i < NUM_OF_VAR; i++) {
 		dvalues[i] = 0.;
@@ -126,7 +125,7 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 		LNhchih[i] = scalar_Product3(values + LNH_1, values + CHIH1_1 + 3 * i);
 	}
 
-	// calculating the domega and the MECO without the spin components
+	// calculating domega and MECO without the spin components
 	for (i = params->order; i >= LAL_PNORDER_NEWTONIAN; i--) {
 		dvalues[OMEGA] += params->coeff.domega[i] * omegaPowi_3[i];
 	}
@@ -135,8 +134,8 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 		dvalues[MECO] += params->coeff.MECO[i] * omegaPowi_3[i-1];
 	}
 
-	// calculating the other derivatives and the domega and MECO components with
-	// spin
+	// calculating the other derivatives and the domega and MECO with spin
+	// components
 	switch (params->order) {
 		case LAL_PNORDER_THREE_POINT_FIVE:
 		case LAL_PNORDER_THREE:
@@ -152,7 +151,7 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 			#endif
 			for (i = 0; i < 2; i++) {
 				j = (i + 1) % 2;	// the opposite index
-				// the 3*index is used to acces the first spin, if index=0,
+				// the 3*index is used, to acces the first spin, if index=0,
 				// otherwise the second spin
 				vector_product3(values + CHIH1_1 + 3*j, values + CHIH1_1 + 3*i,
 						params->coeff.dchih[i][LAL_PNORDER_TWO],
@@ -223,7 +222,7 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 	integrator_init(status->statusPtr, NUM_OF_VAR - 1, params, derivator, &integrator);
 	CHECKSTATUSPTR(status);
 
-	// setting the initial values of the dynamic variables
+	// initializing the dynamic variables
 	values[PHASE] = params->phi;
 	values[OMEGA] = params->lower_Freq * freq_Step;
 	values[LNH_1] = sin(params->inclination);
@@ -233,10 +232,12 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 		values[CHIH1_1 + i] = params->chih[0][i];
 		values[CHIH2_1 + i] = params->chih[1][i];
 	}
+
+	// filling the coefficients
 	fill_Coefficients(status->statusPtr, params);
 	CHECKSTATUSPTR(status);
 	derivator(time, values, dvalues, params);
-	dvalues[MECO] = -1.;
+	dvalues[MECO] = -1.;	// to be able to start the loop
 	i = 0;
 	ERR_STR_END("while start");
 	while (dvalues[MECO] < 0. && dvalues[OMEGA] > 0.0 && SQR(values[LNH_3])
@@ -244,6 +245,8 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 			/ 2.) {
 		REAL8 alpha = atan2(values[LNH_2], values[LNH_1]);
 		REAL8 amp = params->signal_Amp * pow(values[OMEGA], 2. / 3.);
+		
+		// writing the output
 		if (wave->h) {
 			REAL8 temp1 = -0.5 * amp * cos(2. * (values[PHASE] - params->phi))
 					* (values[LNH_3] * values[LNH_3] + 1.);
@@ -261,9 +264,13 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 			wave->pol->data[i] = 2. * alpha;
 		}
 		wave->freq->data[i] = values[OMEGA] / freq_Step;
-		time = i * params->sampling_Time;
+
+		// evolving
+		time = i++ * params->sampling_Time;
 		integrator_Func(status->statusPtr, &integrator, step, values);
 		CHECKSTATUSPTR(status);
+
+		// if one of the variables is nan, the PN approximation braked down
 		if (isnan(values[PHASE]) || isnan(values[OMEGA])
 				|| isnan(values[LNH_1]) || isnan(values[LNH_2])
 				|| isnan(values[LNH_3]) || isnan(values[CHIH1_1])
@@ -274,33 +281,22 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 			break;
 		}
 		derivator(time, values, dvalues, params);
-		if (i == wave->length + 1)
+		if (i == wave->length + 1) {
 			break;
-		//	hiba ellenőrzés
-		/*#if DEBUG==1
-		 printf("dMECO: 	%lg \n", dvalues[MECO]);
-		 printf("dOMEGA:	%lg \n", dvalues[OMEGA]);
-		 printf("LNH3:	%lg \n", SQR(values[LNH_3]));
-		 printf("tol:	%lg \n", LNhztol);
-		 printf("OMEGA:	%lg \n", values[OMEGA]);
-		 printf("f_step:	%lg \n", freq_Step);
-		 printf("time:	%lg \n", params->sampling_Time);fflush(stdout);
-		 SQR(values[LNH_3]) values[OMEGA]
-		 fprintf(stderr, "rk der\n");fflush(stderr);
-		 #endif*/
-#if DEBUG==1
-		/*fprintf(stdout,
+		}
+		#if DEBUG==1
+			/*fprintf(stdout,
 				"index: %d, %10.5lg < .0, %10.5lg > 0., %10.5lg < %lg, "
 					"%10.5lg < %10.5lg\n", i, dvalues[MECO], dvalues[OMEGA],
 				SQR(values[LNH_3]), 1. - LNhztol,
 				values[OMEGA] / freq_Step, params->sampling_Freq / 2.);
-		fflush(stdout);*/
-#endif
+			fflush(stdout);*/
+		#endif
 	}
 	ERR_STR_END("while end");
 	wave->length = i;
 	printf("%d\n", i);
-	// valami oknál fogva egyszer már fell lett szabadítva!
+	/// \bug there is double free or corruption if uncommented
 	//integrator_free(status->statusPtr, &integrator);
 	CHECKSTATUSPTR(status);
 	DETATCHSTATUSPTR(status);
