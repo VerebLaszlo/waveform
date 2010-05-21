@@ -220,11 +220,11 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 	UINT4 i = 0; // index
 	//INT2 num_evolution_variables = 11; // változók száma
 	REAL8 time = 0., time_next; // időpont az integráláshoz össz-tömegben kifejezve
-	rk_Struct integrator;
+	integrator_System integrator;
 	ERR_STR_END("runge_kutta_init");
-	integrator_init(status->statusPtr, &integrator, NUM_OF_VAR - 1);//num_evolution_variables);
+	integrator_init(status->statusPtr, NUM_OF_VAR - 1, params, &integrator);//num_evolution_variables);
 	integrator.solver_system.function = derivator;
-	integrator.solver_system.params = (void *) params;
+	//integrator.solver_system.params = (void *) params;
 	CHECKSTATUSPTR(status);
 	REAL8 LNhztol = 1.0e-8; // tolerancia LNhz-re
 	const REAL8 geometrized_m_total = params->total_Mass * LAL_MTSUN_SI;
