@@ -13,6 +13,8 @@ NRCSID (WAVEFORMC, "$Id$");
 void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 	INITSTATUS(status, "fill_Coefficients", WAVEFORMC);
 	ATTATCHSTATUSPTR(status);
+
+	// variable definitions and initializations
 	REAL8 thetahat = 1039. / 4620.;
 	REAL8 spin_MPow2[2];
 	REAL8 m_m[2] = { params->mass[1] / params->mass[0], params->mass[0]
@@ -20,11 +22,13 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 	REAL8 piPow2 = SQR(LAL_PI);
 	REAL8 etaPow2 = SQR(params->eta);
 	REAL8 etaPow3 = etaPow2 * params->eta;
-	INT2 i;
+	INT2 i;	// index
 	for (i = 0; i < 2; i++) {
 		spin_MPow2[i] = params->chi_Amp[i] * SQR(params->mass[i])
 				/SQR(params->total_Mass);
 	}
+
+	// calculating the coefficients
 	params->coeff.domega_Global = params->eta * 96. / 5.;
 	for (i = LAL_PNORDER_NEWTONIAN; i < LAL_PNORDER_PSEUDO_FOUR; i += 2) {
 		params->coeff.MECO[i] = -5. * params->eta * (REAL8) (i + 2) / 3.;
@@ -101,8 +105,9 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 
 int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	waveform_Params *params = param;
-	INT2 i, j;
-	// the phase does not need to be set to zero
+
+	// variable declarations and initializations
+	INT2 i, j;	// indexes
 	for (i = OMEGA; i < NUM_OF_VAR; i++) {
 		dvalues[i] = 0.;
 	}
@@ -112,13 +117,6 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	for (i = 2; i < 8; i++) {
 		omegaPowi_3[i] = omegaPowi_3[i - 1] * omegaPowi_3[1];
 	}
-	for (i = params->order; i >= LAL_PNORDER_NEWTONIAN; i--) {
-		dvalues[OMEGA] += params->coeff.domega[i] * omegaPowi_3[i];
-	}
-	dvalues[MECO] += params->coeff.MECO[0] / omegaPowi_3[1];
-	for (i = LAL_PNORDER_NEWTONIAN; i <= params->order; i+=2) {
-		dvalues[MECO] += params->coeff.MECO[i] * omegaPowi_3[i-1];
-	}
 	#if OLD==0
 		REAL8 QM, SS;
 	#endif
@@ -127,6 +125,18 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	for (i = 0; i < 2; i++) {
 		LNhchih[i] = scalar_Product3(values + LNH_1, values + CHIH1_1 + 3 * i);
 	}
+
+	// calculating the domega and the MECO without the spin components
+	for (i = params->order; i >= LAL_PNORDER_NEWTONIAN; i--) {
+		dvalues[OMEGA] += params->coeff.domega[i] * omegaPowi_3[i];
+	}
+	dvalues[MECO] += params->coeff.MECO[0] / omegaPowi_3[1];
+	for (i = LAL_PNORDER_NEWTONIAN; i <= params->order; i+=2) {
+		dvalues[MECO] += params->coeff.MECO[i] * omegaPowi_3[i-1];
+	}
+
+	// calculating the other derivatives and the domega and MECO components with
+	// spin
 	switch (params->order) {
 		case LAL_PNORDER_THREE_POINT_FIVE:
 		case LAL_PNORDER_THREE:
@@ -140,14 +150,10 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 				QM = params->coeff.QM_const;
 				SS = params->coeff.SS_const;
 			#endif
-			/*
-				vector_product3(values + CHIH2_1, values + CHIH1_1,
-					params->coeff.dchih[0][LAL_PNORDER_TWO], chih1xchih2[0]);
-				vector_product3(values + CHIH1_1, values + CHIH2_1,
-					params->coeff.dchih[1][LAL_PNORDER_TWO], chih1xchih2[1]);
-			 */
 			for (i = 0; i < 2; i++) {
-				j = (i + 1) % 2;
+				j = (i + 1) % 2;	// the opposite index
+				// the 3*index is used to acces the first spin, if index=0,
+				// otherwise the second spin
 				vector_product3(values + CHIH1_1 + 3*j, values + CHIH1_1 + 3*i,
 						params->coeff.dchih[i][LAL_PNORDER_TWO],
 						chih1xchih2[i]);
@@ -163,21 +169,7 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 					QM += params->coeff.QM[i] * LNhchih[i];
 				#endif
 			}
-			/*
-				for (i = 0; i < 3; i++) {
-					for (j = 0; j < 2; j++) {
-						dvalues[CHIH1_1 + 3 * j + i] += (chih1xchih2[j][i]
-							+ LNhxchih[j][i]) * omegaPowi_3[6];
-					}
-				}
-			 */
 			#if OLD==0
-				/*
-					for (i = 0; i < 2; i++) {
-						SS += params->coeff.SS[i] * SQR(LNhchih[i]);
-						QM += params->coeff.QM[i] * LNhchih[i];
-					}
-				 */
 				dvalues[OMEGA] += (QM + SS + S1S2) * omegaPowi_3[LAL_PNORDER_TWO];
 			#else
 				dvalues[OMEGA] += S1S2 * omegaPowi_3[LAL_PNORDER_TWO];
@@ -217,20 +209,21 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 	INITSTATUS(status, "generator", WAVEFORMC);
 	ATTATCHSTATUSPTR(status);
+
+	// variable declaration and initialization
 	UINT4 i = 0; // index
-	//INT2 num_evolution_variables = 11; // változók száma
-	REAL8 time = 0., time_next; // időpont az integráláshoz össz-tömegben kifejezve
-	integrator_System integrator;
-	ERR_STR_END("runge_kutta_init");
-	integrator_init(status->statusPtr, NUM_OF_VAR - 1, params, &integrator);//num_evolution_variables);
-	integrator.solver_system.function = derivator;
-	//integrator.solver_system.params = (void *) params;
-	CHECKSTATUSPTR(status);
+	REAL8 time = 0.;
 	REAL8 LNhztol = 1.0e-8; // tolerancia LNhz-re
 	const REAL8 geometrized_m_total = params->total_Mass * LAL_MTSUN_SI;
 	const REAL8 freq_Step = geometrized_m_total * LAL_PI;
 	const REAL8 step = params->sampling_Time / geometrized_m_total;
 	REAL8 values[NUM_OF_VAR], dvalues[NUM_OF_VAR]; // + 1 for MECO
+	integrator_System integrator;
+	ERR_STR_END("runge_kutta_init");
+	integrator_init(status->statusPtr, NUM_OF_VAR - 1, params, derivator, &integrator);
+	CHECKSTATUSPTR(status);
+
+	// setting the initial values of the dynamic variables
 	values[PHASE] = params->phi;
 	values[OMEGA] = params->lower_Freq * freq_Step;
 	values[LNH_1] = sin(params->inclination);
@@ -246,14 +239,6 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 	dvalues[MECO] = -1.;
 	i = 0;
 	ERR_STR_END("while start");
-	/*#if DEBUG==1
-	 printf("MECO: 	%lg < 0 \n", dvalues[MECO]);
-	 printf("dOMEGA:	%lg > 0 \n", dvalues[OMEGA]);
-	 printf("LNH3:	%lg < ", SQR(values[LNH_3]));
-	 printf("%lg \n", 1. - LNhztol);
-	 printf("OMEGA:	%lg < ", values[OMEGA] / freq_Step);
-	 printf("%lg \n", params->sampling_Freq / 2.);fflush(stdout);
-	 #endif*/
 	while (dvalues[MECO] < 0. && dvalues[OMEGA] > 0.0 && SQR(values[LNH_3])
 			< 1. - LNhztol && values[OMEGA] / freq_Step < params->sampling_Freq
 			/ 2.) {
@@ -277,7 +262,6 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 		}
 		wave->freq->data[i] = values[OMEGA] / freq_Step;
 		time = i * params->sampling_Time;
-		time_next = ++i * params->sampling_Time;
 		integrator_Func(status->statusPtr, &integrator, step, values);
 		CHECKSTATUSPTR(status);
 		if (isnan(values[PHASE]) || isnan(values[OMEGA])

@@ -12,7 +12,7 @@
 
 NRCSID (INTEGRATORC, "$Id$");
 
-void integrator_init(LALStatus *status, INT2 num, void *params,  integrator_System *integrator) {
+void integrator_init(LALStatus *status, INT2 num, void *params, int(*derivator)(REAL8, const REAL8[], REAL8[], void *),  integrator_System *integrator) {
 	INITSTATUS(status, "integrator_init", INTEGRATORC);
 	ATTATCHSTATUSPTR(status);
 	integrator->solver_type = gsl_odeiv_step_rkf45;
@@ -23,6 +23,7 @@ void integrator_init(LALStatus *status, INT2 num, void *params,  integrator_Syst
 	integrator->solver_system.jacobian = NULL;
 	integrator->solver_system.dimension = num;
 	integrator->solver_system.params = params;
+	integrator->solver_system.function = derivator;
 	DETATCHSTATUSPTR(status);
 	RETURN (status);
 }

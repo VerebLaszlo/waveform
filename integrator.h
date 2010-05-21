@@ -15,6 +15,8 @@
 
 #include <lal/LALStatusMacros.h>
 
+NRCSID (INTEGRATORH, "$Id$");
+
 /**		The structure contains the integrator.
  */
 typedef struct integrator_System_Tag {
@@ -29,9 +31,10 @@ typedef struct integrator_System_Tag {
  * @param[in,out]	status	: The LAL universal status structure
  * @param[in]		num		: the number of the dynamic variables
  * @param[in]		params	: the parameters used in the derivator function
+ * @param[in]	derivator	: pointer to the derivator function
  * @param[out]	integrator	: the structure conaining the integrator
  */
-void integrator_init(LALStatus *status, INT2 num, void *params,  integrator_System *integrator);
+void integrator_init(LALStatus *status, INT2 num, void *params, int(*derivator)(REAL8, const REAL8[], REAL8[], void *),  integrator_System *integrator);
 
 /**		The function evolves the system with the given time-step.
  * @param[in,out]	status	: The LAL universal status structure

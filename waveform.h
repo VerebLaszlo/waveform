@@ -12,17 +12,14 @@
 
 #include <lal/LALStatusMacros.h>
 #include <lal/LALInspiral.h>
-#include <lal/LALConstants.h>	// \test
 #include <lal/Units.h>
 
 #include "util_math.h"
-#include "util_other.h"
 #include "util_debug.h"
 
 NRCSID (WAVEFORMH, "$Id$");
 
-/**
- *		The structure contains the coefficients for calculating the derivatives of the evolving quantities.
+/**		The structure contains the coefficients for calculating the derivatives of the evolving quantities.
  */
 typedef struct coefficients_Tag {
 	REAL8 domega_Global; ///< global coefficient for domega
@@ -40,8 +37,7 @@ typedef struct coefficients_Tag {
 	REAL8 ln_coeff; ///< coefficient for the ln component in domega
 } coefficients;
 
-/**
- *		The structure contains the system's and the generator's parameters.
+/**		The structure contains the system's and the generator's parameters.
  */
 typedef struct waveform_Params_Tag {
 	//@{@name mass-parameters
@@ -71,16 +67,14 @@ typedef struct waveform_Params_Tag {
 	coefficients coeff; ///< coefficients for the deriving the parameters	//@}
 } waveform_Params;
 
-/**
- *		The function fills the coefficients structure with the needed
- *		coefficients for generating the waveform up to the given PN-order.
+/**		The function fills the coefficients structure with the needed
+ *	coefficients for generating the waveform up to the given PN-order.
  * @param[in,out]	status	: LAL universal status structure
  * @param[in,out]	params	: the generator's parameters
  */
 void fill_Coefficients(LALStatus *status, waveform_Params * const params);
 
-/**
- *		The function calculates the derived values.
+/**		The function calculates the derived values.
  *	\f[
  *		\frac{d\hat{\chi}_i}{d\left(t/m\right)}=\frac{\eta}{2}
  *		\left(4+3\frac{m_j}{m_i}\right)\hat{L}_N\times\hat{\chi}_i
@@ -132,8 +126,7 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params);
  */
 int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * params);
 
-/**
- *		Enumeration to indexing the dynamic variables in the generator function.
+/**		Enumeration to index the dynamic variables in the generator function.
  */
 typedef enum {
 	PHASE,
@@ -151,10 +144,8 @@ typedef enum {
 	NUM_OF_VAR
 } generator_variables;
 
-/**
- *		\todo dekumentáció jobb merírása
- *		The structure's contents are the frequency in the freq->data array and
- *	the one of the following:
+/**		The structure's contents are the frequency in the freq->data array and
+ *	one of the following:
  *	1. the \f$h_+\f$ components in the odd numbered h->data->data member and
  *	\f$h_\times\f$ componets in the even numbered h->data->data member.
  *	2. the \f$a_+\f$ amplitude components in the odd numbered a->data->data members and
@@ -166,14 +157,13 @@ typedef enum {
 typedef struct waveform_Tag {
 	size_t length; ///< the length of the vectors, but half the length of the h and a vectors
 	REAL4TimeVectorSeries *h; ///< the wave components
+	REAL4TimeVectorSeries *a; ///< the amplitude components
 	REAL8Vector *phase; ///< the phase function
 	REAL4Vector *pol; ///< the polarization shift
 	REAL4Vector *freq; ///< the frequency
-	REAL4TimeVectorSeries *a; ///< the amplitude components
 } waveform;
 
-/**
- *		The function generates the waveform.
+/**		The function generates the waveform.
  * @param[in,out]	status	: LAL universal status structure
  * @param[in]		params	: the input parameters
  * @param[out]		wave	: the generated waveform
