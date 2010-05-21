@@ -54,6 +54,7 @@ size_t multi_Max(size_t array[], size_t length);
  * @param[in]  right	: the right vector
  * @return	the product
  */
+
 double scalar_Product3(const double a1[], const double a2[3]);
 
 /**

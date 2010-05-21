@@ -322,4 +322,3 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 	DETATCHSTATUSPTR(status);
 	RETURN(status);
 }
-
