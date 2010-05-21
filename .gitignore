@@ -1,0 +1,23 @@
+# Ignore objects and archives.
+*.[oa]
+
+# Ignore the doc folder
+doc
+
+# ignore .files
+.*
+!.gitignore
+
+# eclipse egy folderja
+Debug
+
+*~
+*.b
+*out
+lal
+own
+LALSTPN*
+waves
+proba
+*.cx
+*.hx

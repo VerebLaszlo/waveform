@@ -1,0 +1,325 @@
+/**
+ * @file waveform.c
+ *		Containes the function definition to create GWforms.
+ * @author László Veréb
+ * @date 2010.05.21.
+ */
+
+#include "waveform.h"
+#include "integrator.h"
+
+NRCSID (WAVEFORMC, "$Id$");
+
+void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
+	INITSTATUS(status, "fill_Coefficients", WAVEFORMC);
+	ATTATCHSTATUSPTR(status);
+	REAL8 thetahat = 1039. / 4620.;
+	REAL8 spin_MPow2[2];
+	REAL8 m_m[2] = { params->mass[1] / params->mass[0], params->mass[0]
+			/ params->mass[1] };
+	REAL8 piPow2 = SQR(LAL_PI);
+	REAL8 etaPow2 = SQR(params->eta);
+	REAL8 etaPow3 = etaPow2 * params->eta;
+	INT2 i;
+	for (i = 0; i < 2; i++) {
+		spin_MPow2[i] = params->chi_Amp[i] * SQR(params->mass[i])
+				/SQR(params->total_Mass);
+	}
+	params->coeff.domega_Global = params->eta * 96. / 5.;
+	for (i = LAL_PNORDER_NEWTONIAN; i < LAL_PNORDER_PSEUDO_FOUR; i += 2) {
+		params->coeff.MECO[i] = -5. * params->eta * (REAL8) (i + 2) / 3.;
+		//params->coeff.MECO[i + 1] = 0.;		// \test
+	}
+	switch (params->order) {
+		case LAL_PNORDER_THREE_POINT_FIVE:
+			params->coeff.domega[LAL_PNORDER_THREE_POINT_FIVE] = (-4415.
+					/ 4032. + params->eta * 358675. / 6048. + etaPow2 * 91495.
+					/ 1512.) * LAL_PI;
+		case LAL_PNORDER_THREE:
+			params->coeff.domega[LAL_PNORDER_THREE]
+					= (16447322263. / 139708800. - LAL_GAMMA * 1712. / 105.
+							+ piPow2 * 16. / 3.) + (-273811877. / 1088640.
+							+ piPow2 * 451. / 48. - thetahat * 88. / 3.)
+							* params->eta + etaPow2 * 541. / 896. - etaPow3
+							* 5605. / 2592.;
+			params->coeff.ln_coeff = -856. / 105.;
+			params->coeff.MECO[LAL_PNORDER_THREE] *= -675. / 64. + (209323.
+					/ 4032. - 205. * piPow2 / 96. + (110. / 9.) * (1987.
+					/ 3080.)) * params->eta - 155. * etaPow2 / 96. - 35.
+					* etaPow3 / 5184.;
+		case LAL_PNORDER_TWO_POINT_FIVE:
+			params->coeff.domega[LAL_PNORDER_TWO_POINT_FIVE] = -(4159. + 15876.
+					* params->eta) * LAL_PI / 672.;
+		case LAL_PNORDER_TWO:
+			params->coeff.domega[LAL_PNORDER_TWO] = 34103. / 18144.
+					+ params->eta * 13661. / 2016. + etaPow2 * 59. / 18.;
+			params->coeff.SS_const = 0.;
+			params->coeff.QM_const = 0.;
+			params->coeff.dchih[0][LAL_PNORDER_TWO] = spin_MPow2[1] / 2.;
+			params->coeff.dchih[1][LAL_PNORDER_TWO] = spin_MPow2[0] / 2.;
+			for (i = 0; i < 2; i++) {
+				params->coeff.SS[i] = -spin_MPow2[i] * params->chi_Amp[i] / 96.;
+				params->coeff.SS_const += 7. * spin_MPow2[i]
+						* params->chi_Amp[i] / 96.;
+				params->coeff.QM[i] = spin_MPow2[i] * params->chi_Amp[i]
+						* params->flatness[i] * 7.5;
+				params->coeff.QM_const -= spin_MPow2[i] * params->chi_Amp[i]
+						* params->flatness[i] * 2.5;
+			}
+			params->coeff.S1S2[0] = 721. * params->eta * params->chi_Amp[0]
+					* params->chi_Amp[1] / 48.;
+			params->coeff.S1S2[1] = -247. * params->eta * params->chi_Amp[0]
+					* params->chi_Amp[1] / 48.;
+			params->coeff.MECO[LAL_PNORDER_TWO] *= (-81. + 57. * params->eta
+					- etaPow2) / 24.;
+			params->coeff.MECO_Spin[2] = -spin_MPow2[0] * spin_MPow2[1];
+		case LAL_PNORDER_ONE_POINT_FIVE:
+			params->coeff.domega[LAL_PNORDER_ONE_POINT_FIVE] = 4. * LAL_PI;
+			for (i = 0; i < 2; i++) {
+				params->coeff.dchih[i][LAL_PNORDER_ONE_POINT_FIVE] = (4. + 3.
+						* m_m[i]) * params->eta / 2.;
+				params->coeff.dLNh[i] = -spin_MPow2[i] / params->eta;
+				params->coeff.SO[i] = -spin_MPow2[i] * (113. + 75. * m_m[i])
+						/ 12.;
+				params->coeff.MECO_Spin[i] = -spin_MPow2[i] * 5. * params->eta
+						* (4. + 3. * m_m[i]) / 9.;
+			}
+		case LAL_PNORDER_ONE:
+			params->coeff.domega[LAL_PNORDER_ONE]
+					= -(743. + 924. * params->eta) / 336.;
+			params->coeff.MECO[LAL_PNORDER_ONE] *= -(9. + params->eta) / 12.;
+		case LAL_PNORDER_HALF:
+			params->coeff.domega[LAL_PNORDER_HALF] = 0.;
+		case LAL_PNORDER_NEWTONIAN:
+			params->coeff.domega[LAL_PNORDER_NEWTONIAN] = 1.;
+		default:
+			break;
+	}
+	DETATCHSTATUSPTR(status);
+	RETURN(status);
+}
+
+int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
+	waveform_Params *params = param;
+	INT2 i, j;
+	// the phase does not need to be set to zero
+	for (i = OMEGA; i < NUM_OF_VAR; i++) {
+		dvalues[i] = 0.;
+	}
+	REAL8 omegaPowi_3[8];
+	omegaPowi_3[0] = 1.;
+	omegaPowi_3[1] = cbrt(values[OMEGA]);
+	for (i = 2; i < 8; i++) {
+		omegaPowi_3[i] = omegaPowi_3[i - 1] * omegaPowi_3[1];
+	}
+	for (i = params->order; i >= LAL_PNORDER_NEWTONIAN; i--) {
+		dvalues[OMEGA] += params->coeff.domega[i] * omegaPowi_3[i];
+	}
+	dvalues[MECO] += params->coeff.MECO[0] / omegaPowi_3[1];
+	for (i = LAL_PNORDER_NEWTONIAN; i <= params->order; i+=2) {
+		dvalues[MECO] += params->coeff.MECO[i] * omegaPowi_3[i-1];
+	}
+	#if OLD==0
+		REAL8 QM, SS;
+	#endif
+	REAL8 S1S2, chih1chih2, chih1xchih2[2][3], LNhchih[2], LNhxchih[2][3], temp;
+	chih1chih2 = scalar_Product3(values + CHIH1_1, values + CHIH2_1);
+	for (i = 0; i < 2; i++) {
+		LNhchih[i] = scalar_Product3(values + LNH_1, values + CHIH1_1 + 3 * i);
+	}
+	switch (params->order) {
+		case LAL_PNORDER_THREE_POINT_FIVE:
+		case LAL_PNORDER_THREE:
+			dvalues[OMEGA] += params->coeff.ln_coeff * log(16. * omegaPowi_3[2])
+					* omegaPowi_3[LAL_PNORDER_THREE];
+		case LAL_PNORDER_TWO_POINT_FIVE:
+		case LAL_PNORDER_TWO:
+			S1S2 = params->coeff.S1S2[0] * LNhchih[0] * LNhchih[1]
+					+ params->coeff.S1S2[1] * chih1chih2;
+			#if OLD==0
+				QM = params->coeff.QM_const;
+				SS = params->coeff.SS_const;
+			#endif
+			/*
+				vector_product3(values + CHIH2_1, values + CHIH1_1,
+					params->coeff.dchih[0][LAL_PNORDER_TWO], chih1xchih2[0]);
+				vector_product3(values + CHIH1_1, values + CHIH2_1,
+					params->coeff.dchih[1][LAL_PNORDER_TWO], chih1xchih2[1]);
+			 */
+			for (i = 0; i < 2; i++) {
+				j = (i + 1) % 2;
+				vector_product3(values + CHIH1_1 + 3*j, values + CHIH1_1 + 3*i,
+						params->coeff.dchih[i][LAL_PNORDER_TWO],
+						chih1xchih2[i]);
+				temp = -3 * params->coeff.dchih[i][LAL_PNORDER_TWO] * LNhchih[j];
+				vector_product3(values + LNH_1, values + CHIH1_1 + 3 * i, temp,
+						LNhxchih[i]);
+				for (j = 0; j < 3; j++) {
+					dvalues[CHIH1_1 + 3 * i + j] += (chih1xchih2[i][j]
+							+ LNhxchih[i][j]) * omegaPowi_3[6];
+				}
+				#if OLD==0
+					SS += params->coeff.SS[i] * SQR(LNhchih[i]);
+					QM += params->coeff.QM[i] * LNhchih[i];
+				#endif
+			}
+			/*
+				for (i = 0; i < 3; i++) {
+					for (j = 0; j < 2; j++) {
+						dvalues[CHIH1_1 + 3 * j + i] += (chih1xchih2[j][i]
+							+ LNhxchih[j][i]) * omegaPowi_3[6];
+					}
+				}
+			 */
+			#if OLD==0
+				/*
+					for (i = 0; i < 2; i++) {
+						SS += params->coeff.SS[i] * SQR(LNhchih[i]);
+						QM += params->coeff.QM[i] * LNhchih[i];
+					}
+				 */
+				dvalues[OMEGA] += (QM + SS + S1S2) * omegaPowi_3[LAL_PNORDER_TWO];
+			#else
+				dvalues[OMEGA] += S1S2 * omegaPowi_3[LAL_PNORDER_TWO];
+			#endif
+			dvalues[MECO] += params->coeff.MECO_Spin[2] * (chih1chih2 - 3
+					* LNhchih[0] * LNhchih[1]) * omegaPowi_3[3];
+		case LAL_PNORDER_ONE_POINT_FIVE:
+			for (i = 0; i < 2; i++) {
+				vector_product3(values + LNH_1, values + CHIH1_1 + 3 * i,
+						params->coeff.dchih[i][LAL_PNORDER_ONE_POINT_FIVE]
+						* omegaPowi_3[5], LNhxchih[i]);
+				dvalues[OMEGA] += params ->coeff.SO[i] * LNhchih[i]
+						* omegaPowi_3[LAL_PNORDER_ONE_POINT_FIVE];
+				dvalues[MECO] += params->coeff.MECO_Spin[i] * LNhchih[i]
+						* omegaPowi_3[2];
+			}
+			for (i = 0; i < 3; i++) {
+				dvalues[CHIH1_1 + i] += LNhxchih[0][i];
+				dvalues[CHIH2_1 + i] += LNhxchih[1][i];
+				dvalues[LNH_1 + i] += (params->coeff.dLNh[0] * dvalues[CHIH1_1
+						+ i] + params->coeff.dLNh[1] * dvalues[CHIH2_1 + i]) * omegaPowi_3[1];
+			}
+		case LAL_PNORDER_ONE:
+		case LAL_PNORDER_HALF:
+		case LAL_PNORDER_NEWTONIAN:
+		default:
+			break;
+	}
+	dvalues[OMEGA] *= params->coeff.domega_Global * omegaPowi_3[7]
+			* omegaPowi_3[4];
+	dvalues[PHASE] = values[OMEGA] + values[LNH_3] * (values[LNH_2]
+			* dvalues[LNH_1] - values[LNH_1] * dvalues[LNH_2])
+			/ (SQR(values[LNH_1]) + SQR(values[LNH_2]));
+	return GSL_SUCCESS;
+}
+
+void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
+	INITSTATUS(status, "generator", WAVEFORMC);
+	ATTATCHSTATUSPTR(status);
+	UINT4 i = 0; // index
+	//INT2 num_evolution_variables = 11; // változók száma
+	REAL8 time = 0., time_next; // időpont az integráláshoz össz-tömegben kifejezve
+	rk_Struct integrator;
+	ERR_STR_END("runge_kutta_init");
+	integrator_init(status->statusPtr, &integrator, NUM_OF_VAR - 1);//num_evolution_variables);
+	integrator.solver_system.function = derivator;
+	integrator.solver_system.params = (void *) params;
+	CHECKSTATUSPTR(status);
+	REAL8 LNhztol = 1.0e-8; // tolerancia LNhz-re
+	const REAL8 geometrized_m_total = params->total_Mass * LAL_MTSUN_SI;
+	const REAL8 freq_Step = geometrized_m_total * LAL_PI;
+	const REAL8 step = params->sampling_Time / geometrized_m_total;
+	REAL8 values[NUM_OF_VAR], dvalues[NUM_OF_VAR]; // + 1 for MECO
+	values[PHASE] = params->phi;
+	values[OMEGA] = params->lower_Freq * freq_Step;
+	values[LNH_1] = sin(params->inclination);
+	values[LNH_2] = 0.;//+ 1.e-100;
+	values[LNH_3] = cos(params->inclination);
+	for (i = 0; i < 3; i++) {
+		values[CHIH1_1 + i] = params->chih[0][i];
+		values[CHIH2_1 + i] = params->chih[1][i];
+	}
+	fill_Coefficients(status->statusPtr, params);
+	CHECKSTATUSPTR(status);
+	derivator(time, values, dvalues, params);
+	dvalues[MECO] = -1.;
+	i = 0;
+	ERR_STR_END("while start");
+	/*#if DEBUG==1
+	 printf("MECO: 	%lg < 0 \n", dvalues[MECO]);
+	 printf("dOMEGA:	%lg > 0 \n", dvalues[OMEGA]);
+	 printf("LNH3:	%lg < ", SQR(values[LNH_3]));
+	 printf("%lg \n", 1. - LNhztol);
+	 printf("OMEGA:	%lg < ", values[OMEGA] / freq_Step);
+	 printf("%lg \n", params->sampling_Freq / 2.);fflush(stdout);
+	 #endif*/
+	while (dvalues[MECO] < 0. && dvalues[OMEGA] > 0.0 && SQR(values[LNH_3])
+			< 1. - LNhztol && values[OMEGA] / freq_Step < params->sampling_Freq
+			/ 2.) {
+		REAL8 alpha = atan2(values[LNH_2], values[LNH_1]);
+		REAL8 amp = params->signal_Amp * pow(values[OMEGA], 2. / 3.);
+		if (wave->h) {
+			REAL8 temp1 = -0.5 * amp * cos(2. * (values[PHASE] - params->phi))
+					* (values[LNH_3] * values[LNH_3] + 1.);
+			REAL8 temp2 = amp * sin(2. * values[PHASE]) * values[LNH_3];
+			wave->h->data->data[2 * i] = temp1 * cos(2. * alpha) + temp2 * sin(
+					2. * alpha);
+			wave->h->data->data[2 * i + 1] = temp1 * sin(2. * alpha) - temp2
+					* cos(2. * alpha);
+		}
+		if (wave->a && wave->phase && wave->pol && wave->freq) {
+			wave->a->data->data[2 * i] = -amp * 0.5 * (1. + values[LNH_3]
+					* values[LNH_3]);
+			wave->a->data->data[2 * i + 1] = -amp * values[LNH_3];
+			wave->phase->data[i] = 2. * values[PHASE];
+			wave->pol->data[i] = 2. * alpha;
+		}
+		wave->freq->data[i] = values[OMEGA] / freq_Step;
+		time = i * params->sampling_Time;
+		time_next = ++i * params->sampling_Time;
+		integrator_Func(status->statusPtr, &integrator, step, values);
+		CHECKSTATUSPTR(status);
+		if (isnan(values[PHASE]) || isnan(values[OMEGA])
+				|| isnan(values[LNH_1]) || isnan(values[LNH_2])
+				|| isnan(values[LNH_3]) || isnan(values[CHIH1_1])
+				|| isnan(values[CHIH1_2]) || isnan(values[CHIH1_3])
+				|| isnan(values[CHIH2_1]) || isnan(values[CHIH2_2])
+				|| isnan(values[CHIH2_3])) {
+			ERR_STR_END("nan");
+			break;
+		}
+		derivator(time, values, dvalues, params);
+		if (i == wave->length + 1)
+			break;
+		//	hiba ellenőrzés
+		/*#if DEBUG==1
+		 printf("dMECO: 	%lg \n", dvalues[MECO]);
+		 printf("dOMEGA:	%lg \n", dvalues[OMEGA]);
+		 printf("LNH3:	%lg \n", SQR(values[LNH_3]));
+		 printf("tol:	%lg \n", LNhztol);
+		 printf("OMEGA:	%lg \n", values[OMEGA]);
+		 printf("f_step:	%lg \n", freq_Step);
+		 printf("time:	%lg \n", params->sampling_Time);fflush(stdout);
+		 SQR(values[LNH_3]) values[OMEGA]
+		 fprintf(stderr, "rk der\n");fflush(stderr);
+		 #endif*/
+#if DEBUG==1
+		/*fprintf(stdout,
+				"index: %d, %10.5lg < .0, %10.5lg > 0., %10.5lg < %lg, "
+					"%10.5lg < %10.5lg\n", i, dvalues[MECO], dvalues[OMEGA],
+				SQR(values[LNH_3]), 1. - LNhztol,
+				values[OMEGA] / freq_Step, params->sampling_Freq / 2.);
+		fflush(stdout);*/
+#endif
+	}
+	ERR_STR_END("while end");
+	wave->length = i;
+	printf("%d\n", i);
+	// valami oknál fogva egyszer már fell lett szabadítva!
+	//integrator_free(status->statusPtr, &integrator);
+	CHECKSTATUSPTR(status);
+	DETATCHSTATUSPTR(status);
+	RETURN(status);
+}
+
