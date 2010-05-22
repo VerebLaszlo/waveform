@@ -65,6 +65,8 @@ int main(int argc, char *argv[]) {
 
 	LALSnprintf(injParams.waveform, LIGOMETA_WAVEFORM_MAX * sizeof(CHAR),
 			PNString);
+
+	choose_CoherentGW_Component(&mystatus, 3, &thewaveform);
 	
 	/*************************************************************************/
 	/******************** ez majd nem kell a végső kódban ********************/

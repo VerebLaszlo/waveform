@@ -110,55 +110,81 @@ void allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *wave) {
 	CreateVectorSequenceIn in;
 	/* Make sure parameter and waveform structures exist. */
 	ASSERT(wave, status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
-	/* Make sure waveform fields don't exist. */
-	ASSERT(!(wave->a), status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
-	ASSERT(!(wave->f), status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
-	ASSERT(!(wave->phi), status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
-	ASSERT(!(wave->shift), status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
-	if ((wave->h = (REAL4TimeVectorSeries *) LALMalloc(
-			sizeof(REAL4TimeVectorSeries))) == NULL) {
-		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
-	}
-	if ((wave->a = (REAL4TimeVectorSeries *) LALMalloc(
-			sizeof(REAL4TimeVectorSeries))) == NULL) {
-		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
-	}
-	if ((wave->f = (REAL4TimeSeries *) LALMalloc(
-			sizeof(REAL4TimeSeries))) == NULL) {
-		LALFree(wave->a);
-		wave->a = NULL;
-		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
-	}
-	if ((wave->phi = (REAL8TimeSeries *) LALMalloc(
-			sizeof(REAL8TimeSeries))) == NULL) {
-		LALFree(wave->a);
-		wave->a = NULL;
-		LALFree(wave->f);
-		wave->f = NULL;
-		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
-	}
-	if ((wave->shift = (REAL4TimeSeries *) LALMalloc(
-			sizeof(REAL4TimeSeries))) == NULL) {
-		LALFree(wave->a);
-		wave->a = NULL;
-		LALFree(wave->f);
-		wave->f = NULL;
-		LALFree(wave->phi);
-		wave->phi = NULL;
-		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
-	}
+	
 	in.length = length;
 	in.vectorLength = 2;
-	LALSCreateVectorSequence(status->statusPtr, &(wave->h->data), &in);
-	CHECKSTATUSPTR(status);
-	LALSCreateVectorSequence(status->statusPtr, &(wave->a->data), &in);
-	CHECKSTATUSPTR(status);
+	if (wave->h != NULL) {
+		LALSCreateVectorSequence(status->statusPtr, &(wave->h->data), &in);
+		CHECKSTATUSPTR(status);
+	}
+	if (wave->a != NULL) {
+		LALSCreateVectorSequence(status->statusPtr, &(wave->a->data), &in);
+		CHECKSTATUSPTR(status);
+		LALDCreateVector(status->statusPtr, &(wave->phi->data), in.length);
+		CHECKSTATUSPTR(status);
+		LALSCreateVector(status->statusPtr, &(wave->shift->data), in.length);
+		CHECKSTATUSPTR(status);
+	}
 	LALSCreateVector(status->statusPtr, &(wave->f->data), in.length);
 	CHECKSTATUSPTR(status);
-	LALDCreateVector(status->statusPtr, &(wave->phi->data), in.length);
-	CHECKSTATUSPTR(status);
-	LALSCreateVector(status->statusPtr, &(wave->shift->data), in.length);
-	CHECKSTATUSPTR(status);
+	DETATCHSTATUSPTR(status);
+	RETURN(status);
+}
+
+void choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave) {
+	INITSTATUS(status, "fill_Params", WAVEFORM_INTERFACEC);
+	ATTATCHSTATUSPTR(status);
+	
+	if ((wave->f = (REAL4TimeSeries *) LALMalloc(
+			sizeof(REAL4TimeSeries))) == NULL) {
+		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+	}
+	if (mode == 1 || mode == 3) {
+		if ((wave->h = (REAL4TimeVectorSeries *) LALMalloc(sizeof(REAL4TimeVectorSeries))) == NULL) {
+			LALFree(wave->f);
+			wave->f = NULL;
+			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+		}
+	}
+	if (mode == 2 || mode == 3) {
+		if ((wave->a = (REAL4TimeVectorSeries *) LALMalloc(
+				sizeof(REAL4TimeVectorSeries))) == NULL) {
+			LALFree(wave->f);
+			wave->f = NULL;
+			if (mode == 1 || mode == 3) {
+				LALFree(wave->h);
+				wave->h = NULL;
+			}
+			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+		}
+		if ((wave->phi = (REAL8TimeSeries *) LALMalloc(
+				sizeof(REAL8TimeSeries))) == NULL) {
+			LALFree(wave->a);
+			wave->a = NULL;
+			LALFree(wave->f);
+			wave->f = NULL;
+			if (mode == 1 || mode == 3) {
+				LALFree(wave->h);
+				wave->h = NULL;
+			}
+			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+		}
+		if ((wave->shift = (REAL4TimeSeries *) LALMalloc(
+				sizeof(REAL4TimeSeries))) == NULL) {
+			LALFree(wave->a);
+			wave->a = NULL;
+			LALFree(wave->f);
+			wave->f = NULL;
+			LALFree(wave->phi);
+			wave->phi = NULL;
+			if (mode == 1 || mode == 3) {
+				LALFree(wave->h);
+				wave->h = NULL;
+			}
+			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+		}
+	}
+
 	DETATCHSTATUSPTR(status);
 	RETURN(status);
 }
