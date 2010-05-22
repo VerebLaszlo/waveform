@@ -41,7 +41,7 @@ void fill_Params(LALStatus *status, InspiralTemplate *params,
  * @param[in]		length	: the length of the waveform
  * @param[out]		wave	: pointer to the allocated waveform
  */
-void allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *wave);
+void allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *waveform);
 
 /**		The function allocates timeseries structures for the waveform.
  * @param[in,out]	status	: LAL universal status structure
@@ -49,6 +49,7 @@ void allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *wave);
  * the a+,ax; and if 3 then for both
  * @param[out]		wave	: pointer to the wavformstructure
  */
-void choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave);
+void
+choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave);
 
 #endif /* WAVEFOMR_INTERFACE_H */

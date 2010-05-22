@@ -8,21 +8,22 @@
 
 #include "waveform_interface.h"
 
-REAL8 lapultsag[2];	///< \bug át kell rakni a paraméterekhez
+REAL8 lapultsag[2]; ///< \bug át kell rakni a paraméterekhez
 
 NRCSID (WAVEFORM_INTERFACEC, "$Id$");
 
-void interface(LALStatus *status, CoherentGW *waveform_out, InspiralTemplate *params, PPNParamStruc *ppnParams) {
+void interface(LALStatus *status, CoherentGW *waveform,
+		InspiralTemplate *params, PPNParamStruc *ppnParams) {
 
 	// variable declaration and initialization
 	UINT4 count, i;
-	REAL8 phiC;	///< phase at coalescence
+	REAL8 phiC; ///< phase at coalescence
 	InspiralInit paramsInit;
 
 	INITSTATUS(status, "interface", WAVEFORM_INTERFACEC);
 	ATTATCHSTATUSPTR(status);
 	ASSERT(params, status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
-	/* Compute some parameters*/
+	// Compute some parameters
 	LALInspiralInit(status->statusPtr, params, &paramsInit);
 	CHECKSTATUSPTR(status);
 	if (paramsInit.nbins == 0) {
@@ -30,70 +31,58 @@ void interface(LALStatus *status, CoherentGW *waveform_out, InspiralTemplate *pa
 		RETURN(status);
 	}
 
-	/* Allocate the waveform structures. */
-	allocate_CoherentGW(status->statusPtr, paramsInit.nbins, waveform_out);
+	// Allocate the waveform structures.
+	allocate_CoherentGW(status->statusPtr, paramsInit.nbins, waveform);
 	CHECKSTATUSPTR(status);
 	waveform_Params wave_Params;
-	waveform wave;
-	wave.length = waveform_out->f->data->length;
-	wave.h = waveform_out->h;
-	wave.a = waveform_out->a;
-	wave.pol = waveform_out->shift->data;
-	wave.freq = waveform_out->f->data;
-	wave.phase = waveform_out->phi->data;
 
 	// filling the parameters
 	fill_Params(status->statusPtr, params, ppnParams, &wave_Params);
 	CHECKSTATUSPTR(status);
 
 	// calling the engine function
-	generator(status->statusPtr, &wave_Params, &wave);
+	generator(status->statusPtr, &wave_Params, waveform);
 	CHECKSTATUSPTR(status);
-	wave.h->data->vectorLength = wave.a->data->vectorLength = wave.length;
-	wave.pol->length = wave.freq->length = wave.phase->length = wave.length;
 	CHECKSTATUSPTR(status);
 #if DEBUG==1
 	fprintf(stderr, "generator_end\n");
 	fflush(stderr);
 #endif
-	count = wave.length;
+	count = waveform->f->data->length;
 	/* Check an empty waveform hasn't been returned */
-	for (i = 0; i < wave.length; i++) {
-		if (wave.phase->data[i] != 0.0)
+	for (i = 0; i < waveform->f->data->length; i++) {
+		if (waveform->phi->data->data[i] != 0.0)
 			break;
 	}
 
 	{
-		phiC = wave.phase->data[wave.length - 1];
+		phiC = waveform->phi->data->data[waveform->f->data->length - 1];
 
-		for (i = 0; i < wave.length; i++) {
-			wave.phase->data[i] = -phiC + wave.phase->data[i] + ppnParams->phi;
+		for (i = 0; i < waveform->f->data->length; i++) {
+			waveform->phi->data->data[i] = -phiC + waveform->phi->data->data[i]
+					+ ppnParams->phi;
 		}
-		waveform_out->a->deltaT = waveform_out->f->deltaT
-				= waveform_out->phi->deltaT = waveform_out->shift->deltaT = 1.
-						/ params->tSampling;
+		waveform->a->deltaT = waveform->f->deltaT = waveform->phi->deltaT
+				= waveform->shift->deltaT = 1. / params->tSampling;
 
-		waveform_out->a->sampleUnits = lalStrainUnit;
-		waveform_out->f->sampleUnits = lalHertzUnit;
-		waveform_out->phi->sampleUnits = lalDimensionlessUnit;
-		waveform_out->shift->sampleUnits = lalDimensionlessUnit;
+		waveform->a->sampleUnits = lalStrainUnit;
+		waveform->f->sampleUnits = lalHertzUnit;
+		waveform->phi->sampleUnits = lalDimensionlessUnit;
+		waveform->shift->sampleUnits = lalDimensionlessUnit;
 
-		waveform_out->position = ppnParams->position;
-		waveform_out->psi = ppnParams->psi;
+		waveform->position = ppnParams->position;
+		waveform->psi = ppnParams->psi;
 
-		snprintf(waveform_out->a->name, LALNameLength,
-				"STPN inspiral amplitudes");
-		snprintf(waveform_out->f->name, LALNameLength,
-				"STPN inspiral frequency");
-		snprintf(waveform_out->phi->name, LALNameLength, "STPN inspiral phase");
-		snprintf(waveform_out->shift->name, LALNameLength,
-				"STPN inspiral polshift");
+		snprintf(waveform->a->name, LALNameLength, "STPN inspiral amplitudes");
+		snprintf(waveform->f->name, LALNameLength, "STPN inspiral frequency");
+		snprintf(waveform->phi->name, LALNameLength, "STPN inspiral phase");
+		snprintf(waveform->shift->name, LALNameLength, "STPN inspiral polshift");
 
 		/* --- fill some output ---*/
 		ppnParams->tc = (REAL8) (count - 1) / params->tSampling;
 		ppnParams->length = count;
-		ppnParams->dfdt = ((REAL4) (waveform_out->f->data->data[count - 1]
-				- waveform_out->f->data->data[count - 2])) * ppnParams->deltaT;
+		ppnParams->dfdt = ((REAL4) (waveform->f->data->data[count - 1]
+				- waveform->f->data->data[count - 2])) * ppnParams->deltaT;
 		ppnParams->fStop = params->fFinal;
 		ppnParams->termCode = GENERATEPPNINSPIRALH_EFSTOP;
 		ppnParams->termDescription = GENERATEPPNINSPIRALH_MSGEFSTOP;
@@ -110,7 +99,7 @@ void allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *wave) {
 	CreateVectorSequenceIn in;
 	/* Make sure parameter and waveform structures exist. */
 	ASSERT(wave, status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
-	
+
 	in.length = length;
 	in.vectorLength = 2;
 	if (wave->h != NULL) {
@@ -134,13 +123,15 @@ void allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *wave) {
 void choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave) {
 	INITSTATUS(status, "fill_Params", WAVEFORM_INTERFACEC);
 	ATTATCHSTATUSPTR(status);
-	
+
 	if ((wave->f = (REAL4TimeSeries *) LALMalloc(
 			sizeof(REAL4TimeSeries))) == NULL) {
 		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 	}
 	if (mode == 1 || mode == 3) {
-		if ((wave->h = (REAL4TimeVectorSeries *) LALMalloc(sizeof(REAL4TimeVectorSeries))) == NULL) {
+		if ((wave->h
+				= (REAL4TimeVectorSeries *) LALMalloc(sizeof(REAL4TimeVectorSeries)))
+				== NULL) {
 			LALFree(wave->f);
 			wave->f = NULL;
 			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
@@ -189,7 +180,8 @@ void choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave)
 	RETURN(status);
 }
 
-void fill_Params(LALStatus *status, InspiralTemplate *params, PPNParamStruc *ppnParams, waveform_Params *wave) {
+void fill_Params(LALStatus *status, InspiralTemplate *params,
+		PPNParamStruc *ppnParams, waveform_Params *wave) {
 	INITSTATUS(status, "fill_Params", WAVEFORM_INTERFACEC);
 	ATTATCHSTATUSPTR(status);
 	wave->mass[0] = params->mass1;

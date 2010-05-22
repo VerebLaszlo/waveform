@@ -34,7 +34,9 @@ typedef struct integrator_System_Tag {
  * @param[in]	derivator	: pointer to the derivator function
  * @param[out]	integrator	: the structure conaining the integrator
  */
-void integrator_init(LALStatus *status, INT2 num, void *params, int(*derivator)(REAL8, const REAL8[], REAL8[], void *),  integrator_System *integrator);
+void integrator_init(LALStatus *status, INT2 num, void *params,
+		int(*derivator)(REAL8, const REAL8[], REAL8[], void *),
+		integrator_System *integrator);
 
 /**		The function evolves the system with the given time-step.
  * @param[in,out]	status	: The LAL universal status structure
@@ -43,7 +45,8 @@ void integrator_init(LALStatus *status, INT2 num, void *params, int(*derivator)(
  * @param[in,out]	values	: as input parameters the system's actual position,
  * as ouput the system's next position.
  */
-void integrator_Func(LALStatus *status, integrator_System *integrator, REAL8 step, REAL8 values[]);
+void integrator_Func(LALStatus *status, integrator_System *integrator,
+		REAL8 step, REAL8 values[]);
 
 /**		The function deallocates the integrator.
  * @param[in,out]	status	: The LAL universal status structure

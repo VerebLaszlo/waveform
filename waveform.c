@@ -106,7 +106,7 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	waveform_Params *params = param;
 
 	// variable declaration and initialization
-	INT2 i, j;	// indexes
+	INT2 i, j; // indexes
 	for (i = OMEGA; i < NUM_OF_VAR; i++) {
 		dvalues[i] = 0.;
 	}
@@ -116,9 +116,9 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	for (i = 2; i < 8; i++) {
 		omegaPowi_3[i] = omegaPowi_3[i - 1] * omegaPowi_3[1];
 	}
-	#if OLD==0
-		REAL8 QM, SS;
-	#endif
+#if OLD==0
+	REAL8 QM, SS;
+#endif
 	REAL8 S1S2, chih1chih2, chih1xchih2[2][3], LNhchih[2], LNhxchih[2][3], temp;
 	chih1chih2 = scalar_Product3(values + CHIH1_1, values + CHIH2_1);
 	for (i = 0; i < 2; i++) {
@@ -130,8 +130,8 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 		dvalues[OMEGA] += params->coeff.domega[i] * omegaPowi_3[i];
 	}
 	dvalues[MECO] += params->coeff.MECO[0] / omegaPowi_3[1];
-	for (i = LAL_PNORDER_NEWTONIAN; i <= params->order; i+=2) {
-		dvalues[MECO] += params->coeff.MECO[i] * omegaPowi_3[i-1];
+	for (i = LAL_PNORDER_NEWTONIAN; i <= params->order; i += 2) {
+		dvalues[MECO] += params->coeff.MECO[i] * omegaPowi_3[i - 1];
 	}
 
 	// calculating the other derivatives and the domega and MECO with spin
@@ -139,47 +139,49 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	switch (params->order) {
 		case LAL_PNORDER_THREE_POINT_FIVE:
 		case LAL_PNORDER_THREE:
-			dvalues[OMEGA] += params->coeff.ln_coeff * log(16. * omegaPowi_3[2])
+			dvalues[OMEGA] += params->coeff.ln_coeff
+					* log(16. * omegaPowi_3[2])
 					* omegaPowi_3[LAL_PNORDER_THREE];
 		case LAL_PNORDER_TWO_POINT_FIVE:
 		case LAL_PNORDER_TWO:
 			S1S2 = params->coeff.S1S2[0] * LNhchih[0] * LNhchih[1]
 					+ params->coeff.S1S2[1] * chih1chih2;
-			#if OLD==0
-				QM = params->coeff.QM_const;
-				SS = params->coeff.SS_const;
-			#endif
+#if OLD==0
+			QM = params->coeff.QM_const;
+			SS = params->coeff.SS_const;
+#endif
 			for (i = 0; i < 2; i++) {
-				j = (i + 1) % 2;	// the opposite index
+				j = (i + 1) % 2; // the opposite index
 				// the 3*index is used, to acces the first spin, if index=0,
 				// otherwise the second spin
-				vector_product3(values + CHIH1_1 + 3*j, values + CHIH1_1 + 3*i,
-						params->coeff.dchih[i][LAL_PNORDER_TWO],
+				vector_product3(values + CHIH1_1 + 3 * j, values + CHIH1_1 + 3
+						* i, params->coeff.dchih[i][LAL_PNORDER_TWO],
 						chih1xchih2[i]);
-				temp = -3 * params->coeff.dchih[i][LAL_PNORDER_TWO] * LNhchih[j];
+				temp = -3 * params->coeff.dchih[i][LAL_PNORDER_TWO]
+						* LNhchih[j];
 				vector_product3(values + LNH_1, values + CHIH1_1 + 3 * i, temp,
 						LNhxchih[i]);
 				for (j = 0; j < 3; j++) {
 					dvalues[CHIH1_1 + 3 * i + j] += (chih1xchih2[i][j]
 							+ LNhxchih[i][j]) * omegaPowi_3[6];
 				}
-				#if OLD==0
-					SS += params->coeff.SS[i] * SQR(LNhchih[i]);
-					QM += params->coeff.QM[i] * LNhchih[i];
-				#endif
+#if OLD==0
+				SS += params->coeff.SS[i] * SQR(LNhchih[i]);
+				QM += params->coeff.QM[i] * LNhchih[i];
+#endif
 			}
-			#if OLD==0
-				dvalues[OMEGA] += (QM + SS + S1S2) * omegaPowi_3[LAL_PNORDER_TWO];
-			#else
-				dvalues[OMEGA] += S1S2 * omegaPowi_3[LAL_PNORDER_TWO];
-			#endif
+#if OLD==0
+			dvalues[OMEGA] += (QM + SS + S1S2) * omegaPowi_3[LAL_PNORDER_TWO];
+#else
+			dvalues[OMEGA] += S1S2 * omegaPowi_3[LAL_PNORDER_TWO];
+#endif
 			dvalues[MECO] += params->coeff.MECO_Spin[2] * (chih1chih2 - 3
 					* LNhchih[0] * LNhchih[1]) * omegaPowi_3[3];
 		case LAL_PNORDER_ONE_POINT_FIVE:
 			for (i = 0; i < 2; i++) {
 				vector_product3(values + LNH_1, values + CHIH1_1 + 3 * i,
 						params->coeff.dchih[i][LAL_PNORDER_ONE_POINT_FIVE]
-						* omegaPowi_3[5], LNhxchih[i]);
+								* omegaPowi_3[5], LNhxchih[i]);
 				dvalues[OMEGA] += params ->coeff.SO[i] * LNhchih[i]
 						* omegaPowi_3[LAL_PNORDER_ONE_POINT_FIVE];
 				dvalues[MECO] += params->coeff.MECO_Spin[i] * LNhchih[i]
@@ -189,7 +191,8 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 				dvalues[CHIH1_1 + i] += LNhxchih[0][i];
 				dvalues[CHIH2_1 + i] += LNhxchih[1][i];
 				dvalues[LNH_1 + i] += (params->coeff.dLNh[0] * dvalues[CHIH1_1
-						+ i] + params->coeff.dLNh[1] * dvalues[CHIH2_1 + i]) * omegaPowi_3[1];
+						+ i] + params->coeff.dLNh[1] * dvalues[CHIH2_1 + i])
+						* omegaPowi_3[1];
 			}
 		case LAL_PNORDER_ONE:
 		case LAL_PNORDER_HALF:
@@ -205,7 +208,7 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	return GSL_SUCCESS;
 }
 
-void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
+void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform) {
 	INITSTATUS(status, "generator", WAVEFORMC);
 	ATTATCHSTATUSPTR(status);
 
@@ -219,7 +222,8 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 	REAL8 values[NUM_OF_VAR], dvalues[NUM_OF_VAR]; // + 1 for MECO
 	integrator_System integrator;
 	ERR_STR_END("runge_kutta_init");
-	integrator_init(status->statusPtr, NUM_OF_VAR - 1, params, derivator, &integrator);
+	integrator_init(status->statusPtr, NUM_OF_VAR - 1, params, derivator,
+			&integrator);
 	CHECKSTATUSPTR(status);
 
 	// initializing the dynamic variables
@@ -237,7 +241,7 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 	fill_Coefficients(status->statusPtr, params);
 	CHECKSTATUSPTR(status);
 	derivator(time, values, dvalues, params);
-	dvalues[MECO] = -1.;	// to be able to start the loop
+	dvalues[MECO] = -1.; // to be able to start the loop
 	i = 0;
 	ERR_STR_END("while start");
 	while (dvalues[MECO] < 0. && dvalues[OMEGA] > 0.0 && SQR(values[LNH_3])
@@ -245,25 +249,26 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 			/ 2.) {
 		REAL8 alpha = atan2(values[LNH_2], values[LNH_1]);
 		REAL8 amp = params->signal_Amp * pow(values[OMEGA], 2. / 3.);
-		
+
 		// writing the output
-		if (wave->h) {
+		if (waveform->h) {
 			REAL8 temp1 = -0.5 * amp * cos(2. * (values[PHASE] - params->phi))
 					* (values[LNH_3] * values[LNH_3] + 1.);
 			REAL8 temp2 = amp * sin(2. * values[PHASE]) * values[LNH_3];
-			wave->h->data->data[2 * i] = temp1 * cos(2. * alpha) + temp2 * sin(
-					2. * alpha);
-			wave->h->data->data[2 * i + 1] = temp1 * sin(2. * alpha) - temp2
-					* cos(2. * alpha);
+			waveform->h->data->data[2 * i] = temp1 * cos(2. * alpha) + temp2
+					* sin(2. * alpha);
+			waveform->h->data->data[2 * i + 1] = temp1 * sin(2. * alpha)
+					- temp2 * cos(2. * alpha);
 		}
-		if (wave->a && wave->phase && wave->pol && wave->freq) {
-			wave->a->data->data[2 * i] = -amp * 0.5 * (1. + values[LNH_3]
+		if (waveform->a && waveform->phi->data && waveform->shift->data
+				&& waveform->f->data) {
+			waveform->a->data->data[2 * i] = -amp * 0.5 * (1. + values[LNH_3]
 					* values[LNH_3]);
-			wave->a->data->data[2 * i + 1] = -amp * values[LNH_3];
-			wave->phase->data[i] = 2. * values[PHASE];
-			wave->pol->data[i] = 2. * alpha;
+			waveform->a->data->data[2 * i + 1] = -amp * values[LNH_3];
+			waveform->phi->data->data[i] = 2. * values[PHASE];
+			waveform->shift->data->data[i] = 2. * alpha;
 		}
-		wave->freq->data[i] = values[OMEGA] / freq_Step;
+		waveform->f->data->data[i] = values[OMEGA] / freq_Step;
 
 		// evolving
 		time = i++ * params->sampling_Time;
@@ -281,20 +286,20 @@ void generator(LALStatus *status, waveform_Params *params, waveform *wave) {
 			break;
 		}
 		derivator(time, values, dvalues, params);
-		if (i == wave->length + 1) {
+		if (i == waveform->f->data->length + 1) {
 			break;
 		}
-		#if DEBUG==1
-			/*fprintf(stdout,
-				"index: %d, %10.5lg < .0, %10.5lg > 0., %10.5lg < %lg, "
-					"%10.5lg < %10.5lg\n", i, dvalues[MECO], dvalues[OMEGA],
-				SQR(values[LNH_3]), 1. - LNhztol,
-				values[OMEGA] / freq_Step, params->sampling_Freq / 2.);
-			fflush(stdout);*/
-		#endif
+#if DEBUG==1
+		/*fprintf(stdout,
+		 "index: %d, %10.5lg < .0, %10.5lg > 0., %10.5lg < %lg, "
+		 "%10.5lg < %10.5lg\n", i, dvalues[MECO], dvalues[OMEGA],
+		 SQR(values[LNH_3]), 1. - LNhztol,
+		 values[OMEGA] / f->data_Step, params->sampling_Freq / 2.);
+		 fflush(stdout);*/
+#endif
 	}
 	ERR_STR_END("while end");
-	wave->length = i;
+	waveform->f->data->length = i;
 	printf("%d\n", i);
 	/// \bug there is double free or corruption if uncommented
 	//integrator_free(status->statusPtr, &integrator);

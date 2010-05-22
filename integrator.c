@@ -12,13 +12,16 @@
 
 NRCSID (INTEGRATORC, "$Id$");
 
-void integrator_init(LALStatus *status, INT2 num, void *params, int(*derivator)(REAL8, const REAL8[], REAL8[], void *),  integrator_System *integrator) {
+void integrator_init(LALStatus *status, INT2 num, void *params,
+		int(*derivator)(REAL8, const REAL8[], REAL8[], void *),
+		integrator_System *integrator) {
 	INITSTATUS(status, "integrator_init", INTEGRATORC);
 	ATTATCHSTATUSPTR(status);
 	integrator->solver_type = gsl_odeiv_step_rkf45;
-	integrator->solver_step = gsl_odeiv_step_alloc(integrator->solver_type,
-			num);
-	integrator->solver_control = gsl_odeiv_control_standard_new(1.0e-9, 1.0e-9, .2, .2);
+	integrator->solver_step
+			= gsl_odeiv_step_alloc(integrator->solver_type, num);
+	integrator->solver_control = gsl_odeiv_control_standard_new(1.0e-9, 1.0e-9,
+			.2, .2);
 	integrator->solver_evolve = gsl_odeiv_evolve_alloc(num);
 	integrator->solver_system.jacobian = NULL;
 	integrator->solver_system.dimension = num;
@@ -28,15 +31,16 @@ void integrator_init(LALStatus *status, INT2 num, void *params, int(*derivator)(
 	RETURN (status);
 }
 
-void integrator_Func(LALStatus *status, integrator_System *integrator, REAL8 step, REAL8 values[]) {
+void integrator_Func(LALStatus *status, integrator_System *integrator,
+		REAL8 step, REAL8 values[]) {
 	INITSTATUS(status, "integrator_Func", INTEGRATORC);
 	ATTATCHSTATUSPTR(status);
 	REAL8 time = 0., time_Old, step_X = step;
 	while (time < step) {
 		time_Old = time;
-		gsl_odeiv_evolve_apply(integrator->solver_evolve, integrator->solver_control,
-				integrator->solver_step, &(integrator->solver_system), &time, step, &step_X,
-				values);
+		gsl_odeiv_evolve_apply(integrator->solver_evolve,
+				integrator->solver_control, integrator->solver_step,
+				&(integrator->solver_system), &time, step, &step_X, values);
 		if (time == time_Old) {
 			INT2 i;
 			for (i = 0; i < integrator->solver_system.dimension + 1; i++) {

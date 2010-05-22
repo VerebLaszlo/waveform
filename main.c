@@ -16,7 +16,7 @@
 
 NRCSID(MAINC, "$Id: main.c,v 0.1 2010/05/21");
 
-extern REAL8 lapultsag[2];	///< \bug be kell rakni a paraméterekbe
+extern REAL8 lapultsag[2]; ///< \bug be kell rakni a paraméterekbe
 
 int main(int argc, char *argv[]) {
 
@@ -61,13 +61,13 @@ int main(int argc, char *argv[]) {
 	injParams.distance = atof(argv[14]);
 	ppnParams.deltaT = atof(argv[15]);
 	injParams.polarization = 0;
-	sprintf(PNString, "SpinTaylor%s", argv[16]);	///< \todo ezt a sajátunkra kell átírni
+	sprintf(PNString, "SpinTaylor%s", argv[16]); ///< \todo ezt a sajátunkra kell átírni
 
 	LALSnprintf(injParams.waveform, LIGOMETA_WAVEFORM_MAX * sizeof(CHAR),
 			PNString);
 
 	choose_CoherentGW_Component(&mystatus, 3, &thewaveform);
-	
+
 	/*************************************************************************/
 	/******************** ez majd nem kell a végső kódban ********************/
 	InspiralTemplate inspiralParams; // structure for inspiral package
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
 	dt = thewaveform.phi->deltaT;
 	for (i = 0; i < length; i++) {
 		fprintf(outputfile, "%e\t%e\t%e\n", i * dt, thewaveform.h->data->data[2
-			* i], thewaveform.h->data->data[2 * i + 1]);
+				* i], thewaveform.h->data->data[2 * i + 1]);
 	}
 	//    fclose(outputfile);
 	ERR_STR_END("Done.");

@@ -19,7 +19,8 @@
 
 NRCSID (WAVEFORMH, "$Id$");
 
-/**		The structure contains the coefficients for calculating the derivatives of the evolving quantities.
+/**		The structure contains the coefficients for calculating the derivatives
+ * of the evolving quantities.
  */
 typedef struct coefficients_Tag {
 	REAL8 domega_Global; ///< global coefficient for domega
@@ -168,6 +169,7 @@ typedef struct waveform_Tag {
  * @param[in]		params	: the input parameters
  * @param[out]		wave	: the generated waveform
  */
-void generator(LALStatus *status, waveform_Params *params, waveform *wave);
+void
+generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform);
 
 #endif /* WAVEFORM_H */
