@@ -15,7 +15,8 @@
 ####################################
 #	debugot is írni
 ####################################
-OLD=1	# 0 = LALSTPN, 1 = LALSTPN + SS + QM
+SPIN=1	# 0 = SO, 1 = S1S2, 2 = SS, 4 = QM
+OLD=0	# 1 = LALSTPN, 0 = LALSTPN + SS + QM
 DEBUG=0	# 0 = non, 1 = yes
 OTHERS=Makefile util_debug.h
 ALL_F=gcc -c -Wall
@@ -39,7 +40,7 @@ waveform_interface.o : waveform_interface.c waveform_interface.h waveform.o inte
 	@echo ''
 
 waveform.o : waveform.c waveform.h util_math.o integrator.o ${OTHERS}
-	${ALL_F} ${LAL_INC_F} ${LAL_LIB_F} -DDEBUG=${DEBUG} -DOLD=${OLD} ${GSL_LIB_F} waveform.c util_math.o integrator.o  -lm
+	${ALL_F} ${LAL_INC_F} ${LAL_LIB_F} -DDEBUG=${DEBUG} -DOLD=${OLD} -DSPIN=${SPIN} ${GSL_LIB_F} waveform.c util_math.o integrator.o  -lm
 	@echo ''
 
 integrator.o : integrator.c integrator.h ${OTHERS}

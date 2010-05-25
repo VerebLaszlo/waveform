@@ -10,6 +10,16 @@
 
 NRCSID (WAVEFORMC, "$Id$");
 
+#if SPIN==1 || SPIN==3 || SPIN==5 || SPIN==7
+#define _S1S2_
+#endif
+#if SPIN==2 || SPIN==3 || SPIN==6 || SPIN==7
+#define _SS_
+#endif
+#if SPIN==4 || SPIN==5 || SPIN==6 || SPIN==7
+#define _QM_
+#endif
+
 void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 	INITSTATUS(status, "fill_Coefficients", WAVEFORMC);
 	ATTATCHSTATUSPTR(status);
@@ -116,10 +126,8 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	for (i = 2; i < 8; i++) {
 		omegaPowi_3[i] = omegaPowi_3[i - 1] * omegaPowi_3[1];
 	}
-#if OLD==0
-	REAL8 QM, SS;
-#endif
-	REAL8 S1S2, chih1chih2, chih1xchih2[2][3], LNhchih[2], LNhxchih[2][3], temp;
+	REAL8 QM = 0., SS = 0., S1S2 = 0.;
+	REAL8 chih1chih2, chih1xchih2[2][3], LNhchih[2], LNhxchih[2][3], temp;
 	chih1chih2 = scalar_Product3(values + CHIH1_1, values + CHIH2_1);
 	for (i = 0; i < 2; i++) {
 		LNhchih[i] = scalar_Product3(values + LNH_1, values + CHIH1_1 + 3 * i);
@@ -144,11 +152,15 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 					* omegaPowi_3[LAL_PNORDER_THREE];
 		case LAL_PNORDER_TWO_POINT_FIVE:
 		case LAL_PNORDER_TWO:
+#ifdef _S1S2_
 			S1S2 = params->coeff.S1S2[0] * LNhchih[0] * LNhchih[1]
 					+ params->coeff.S1S2[1] * chih1chih2;
-#if OLD==0
-			QM = params->coeff.QM_const;
+#endif
+#ifdef _SS_
 			SS = params->coeff.SS_const;
+#endif
+#ifdef _QM_
+			QM = params->coeff.QM_const;
 #endif
 			for (i = 0; i < 2; i++) {
 				j = (i + 1) % 2; // the opposite index
@@ -165,16 +177,14 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 					dvalues[CHIH1_1 + 3 * i + j] += (chih1xchih2[i][j]
 							+ LNhxchih[i][j]) * omegaPowi_3[6];
 				}
-#if OLD==0
+#ifdef _SS_
 				SS += params->coeff.SS[i] * SQR(LNhchih[i]);
+#endif
+#ifdef _QM_
 				QM += params->coeff.QM[i] * LNhchih[i];
 #endif
 			}
-#if OLD==0
 			dvalues[OMEGA] += (QM + SS + S1S2) * omegaPowi_3[LAL_PNORDER_TWO];
-#else
-			dvalues[OMEGA] += S1S2 * omegaPowi_3[LAL_PNORDER_TWO];
-#endif
 			dvalues[MECO] += params->coeff.MECO_Spin[2] * (chih1chih2 - 3
 					* LNhchih[0] * LNhchih[1]) * omegaPowi_3[3];
 		case LAL_PNORDER_ONE_POINT_FIVE:

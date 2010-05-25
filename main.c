@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 
 	outputfile = fopen(filename, "w");
 
-	length = thewaveform.phi->data->length;
+	length = thewaveform.f->data->length;
 	dt = thewaveform.phi->deltaT;
 	for (i = 0; i < length; i++) {
 		fprintf(outputfile, "%e\t%e\t%e\n", i * dt, thewaveform.h->data->data[2
