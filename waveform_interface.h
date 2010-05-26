@@ -1,6 +1,6 @@
 /**
- * @file waveform_interface.c
- *		Containes the interfaces to the user and to the other part of the code.
+ * @file waveform_interface.h
+ *		Containes the interface function declarations to the user and to the other part of the code.
  * @author László Veréb
  * @date 2010.05.21.
  */
@@ -39,7 +39,7 @@ void fill_Params(LALStatus *status, InspiralTemplate *params,
 /**		The function allocates memory for the waveform.
  * @param[in,out]	status	: LAL universal status structure
  * @param[in]		length	: the length of the waveform
- * @param[out]		wave	: pointer to the allocated waveform
+ * @param[out]		waveform: pointer to the allocated waveform
  */
 void allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *waveform);
 

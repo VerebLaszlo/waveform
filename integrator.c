@@ -6,11 +6,12 @@
  */
 
 #include <lal/LALInspiral.h>
+#include <lal/LALGSL.h>
 
 #include "integrator.h"
 #include "util_debug.h"
 
-NRCSID (INTEGRATORC, "$Id$");
+NRCSID (INTEGRATORC, "$Id integrator.c$");
 
 void integrator_init(LALStatus *status, INT2 num, void *params,
 		int(*derivator)(REAL8, const REAL8[], REAL8[], void *),
@@ -38,9 +39,11 @@ void integrator_Func(LALStatus *status, integrator_System *integrator,
 	REAL8 time = 0., time_Old, step_X = step;
 	while (time < step) {
 		time_Old = time;
-		gsl_odeiv_evolve_apply(integrator->solver_evolve,
-				integrator->solver_control, integrator->solver_step,
-				&(integrator->solver_system), &time, step, &step_X, values);
+		TRYGSL(gsl_odeiv_evolve_apply(integrator->solver_evolve,
+					integrator->solver_control, integrator->solver_step,
+					&(integrator->solver_system), &time, step, &step_X, values),
+				status);
+		CHECKSTATUSPTR(status);
 		if (time == time_Old) {
 			INT2 i;
 			for (i = 0; i < integrator->solver_system.dimension + 1; i++) {
@@ -49,7 +52,9 @@ void integrator_Func(LALStatus *status, integrator_System *integrator,
 			ABORT(status, LALINSPIRALH_ESTOPPED, LALINSPIRALH_MSGESTOPPED);
 		}
 	}
+	ERR_STR_END("F1");
 	DETATCHSTATUSPTR(status);
+	ERR_STR_END("F2");
 	RETURN (status);
 }
 

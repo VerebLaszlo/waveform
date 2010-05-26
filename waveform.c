@@ -2,13 +2,13 @@
  * @file waveform.c
  *		Containes the function definition to create GWforms.
  * @author László Veréb
- * @date 2010.05.21.
+ * @date 2010.05.21. - _DATE_
  */
 
 #include "waveform.h"
 #include "integrator.h"
 
-NRCSID (WAVEFORMC, "$Id$");
+NRCSID (WAVEFORMC, "$Id waveform.c$");
 
 #if SPIN==1 || SPIN==3 || SPIN==5 || SPIN==7
 #define _S1S2_
@@ -282,9 +282,9 @@ void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform)
 
 		// evolving
 		time = i++ * params->sampling_Time;
+if (i > 50000) ERR_D(i);
 		integrator_Func(status->statusPtr, &integrator, step, values);
 		CHECKSTATUSPTR(status);
-
 		// if one of the variables is nan, the PN approximation braked down
 		if (isnan(values[PHASE]) || isnan(values[OMEGA])
 				|| isnan(values[LNH_1]) || isnan(values[LNH_2])
@@ -307,13 +307,14 @@ void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform)
 		 values[OMEGA] / f->data_Step, params->sampling_Freq / 2.);
 		 fflush(stdout);*/
 #endif
-	}
+	}	/* end fo the while loop*/
 	ERR_STR_END("while end");
 	waveform->f->data->length = i;
 	printf("%d\n", i);
 	/// \bug there is double free or corruption if uncommented
-	//integrator_free(status->statusPtr, &integrator);
+	integrator_free(status->statusPtr, &integrator);
 	CHECKSTATUSPTR(status);
 	DETATCHSTATUSPTR(status);
+	ERR_STR_END("R");
 	RETURN(status);
 }

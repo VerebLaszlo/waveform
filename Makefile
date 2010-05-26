@@ -17,7 +17,7 @@
 ####################################
 SPIN=1	# 0 = SO, 1 = S1S2, 2 = SS, 4 = QM
 OLD=0	# 1 = LALSTPN, 0 = LALSTPN + SS + QM
-DEBUG=0	# 0 = non, 1 = yes
+DEBUG=1	# 0 = non, 1 = yes
 OTHERS=Makefile util_debug.h
 ALL_F=colorgcc -c -Wall
 #LAL_F=-I/opt/lscsoft/lal/include -L/opt/lscsoft/lal/lib/ -llal 

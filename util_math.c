@@ -1,4 +1,4 @@
-/*
+/**
  * @file util_math.c
  *		Contains own mathematical function definitions.
  * @author László Veréb
@@ -39,9 +39,9 @@ double scalar_Product3(const double a1[3], const double a2[3]) {
 	return a1[0] * a2[0] + a1[1] * a2[1] + a1[2] * a2[2];
 }
 
-void vector_product3(const double left[3], const double right[3],
+void vector_product3(const double a1[3], const double a2[3],
 		double weight, double product[3]) {
-	product[0] = weight * (left[1] * right[2] - left[2] * right[1]);
-	product[1] = weight * (left[2] * right[0] - left[0] * right[2]);
-	product[2] = weight * (left[0] * right[1] - left[1] * right[0]);
+	product[0] = weight * (a1[1] * a2[2] - a1[2] * a2[1]);
+	product[1] = weight * (a1[2] * a2[0] - a1[0] * a2[2]);
+	product[2] = weight * (a1[0] * a2[1] - a1[1] * a2[0]);
 }

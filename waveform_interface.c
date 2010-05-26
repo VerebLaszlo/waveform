@@ -1,6 +1,6 @@
 /**
  * @file waveform_interface.c
- *		Containes the interfaces to the user and to the other part of the code.
+ *		Containes the interface function definitons to the user and to the other part of the code.
  * @author László Veréb
  * @date 2010.05.21.
  * \todo LE KELL TISZTÍTANI!!!!!!!!!!!!!!!!!!!
@@ -10,14 +10,14 @@
 
 REAL8 lapultsag[2]; ///< \bug át kell rakni a paraméterekhez
 
-NRCSID (WAVEFORM_INTERFACEC, "$Id$");
+NRCSID (WAVEFORM_INTERFACEC, "$Id waveform_interface.c$");
 
 void interface(LALStatus *status, CoherentGW *waveform,
 		InspiralTemplate *params, PPNParamStruc *ppnParams) {
 
 	// variable declaration and initialization
 	UINT4 count, i;
-	REAL8 phiC; ///< phase at coalescence
+	REAL8 phiC; // phase at coalescence
 	InspiralInit paramsInit;
 
 	INITSTATUS(status, "interface", WAVEFORM_INTERFACEC);
@@ -42,7 +42,6 @@ void interface(LALStatus *status, CoherentGW *waveform,
 
 	// calling the engine function
 	generator(status->statusPtr, &wave_Params, waveform);
-	CHECKSTATUSPTR(status);
 	CHECKSTATUSPTR(status);
 	ERR_STR_END("generator end");
 	count = waveform->f->data->length;
@@ -99,20 +98,25 @@ void allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *wave) {
 
 	in.length = length;
 	in.vectorLength = 2;
+	LALSCreateVector(status->statusPtr, &(wave->f->data), in.length);
+	CHECKSTATUSPTR(status);
+	//memset(wave->f->data->data , 0, in.length*(sizeof(REAL4)));
 	if (wave->h != NULL) {
 		LALSCreateVectorSequence(status->statusPtr, &(wave->h->data), &in);
 		CHECKSTATUSPTR(status);
+		//memset(wave->h->data->data , 0, 2*in.length*(sizeof(REAL4)));
 	}
 	if (wave->a != NULL) {
 		LALSCreateVectorSequence(status->statusPtr, &(wave->a->data), &in);
 		CHECKSTATUSPTR(status);
+		//memset(wave->a->data->data , 0, 2*in.length*(sizeof(REAL4)));
 		LALDCreateVector(status->statusPtr, &(wave->phi->data), in.length);
 		CHECKSTATUSPTR(status);
+		//memset(wave->phi->data->data , 0, in.length*(sizeof(REAL4)));
 		LALSCreateVector(status->statusPtr, &(wave->shift->data), in.length);
 		CHECKSTATUSPTR(status);
+		//memset(wave->shift->data->data , 0, in.length*(sizeof(REAL4)));
 	}
-	LALSCreateVector(status->statusPtr, &(wave->f->data), in.length);
-	CHECKSTATUSPTR(status);
 	DETATCHSTATUSPTR(status);
 	RETURN(status);
 }
@@ -125,6 +129,8 @@ void choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave)
 			sizeof(REAL4TimeSeries))) == NULL) {
 		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 	}
+	memset( wave->f, 0, sizeof(REAL4TimeSeries) );
+
 	if (mode == 1 || mode == 3) {
 		if ((wave->h
 				= (REAL4TimeVectorSeries *) LALMalloc(sizeof(REAL4TimeVectorSeries)))
@@ -133,6 +139,13 @@ void choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave)
 			wave->f = NULL;
 			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 		}
+		///\bug memóriaszivárgás
+		if (mode != 3) {
+			wave->a = NULL;
+			wave->phi = NULL;
+			wave->shift = NULL;
+		}
+		memset( wave->h, 0, sizeof(REAL4TimeVectorSeries) );
 	}
 	if (mode == 2 || mode == 3) {
 		if ((wave->a = (REAL4TimeVectorSeries *) LALMalloc(
@@ -145,6 +158,8 @@ void choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave)
 			}
 			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 		}
+		memset( wave->a, 0, sizeof(REAL4TimeVectorSeries) );
+
 		if ((wave->phi = (REAL8TimeSeries *) LALMalloc(
 				sizeof(REAL8TimeSeries))) == NULL) {
 			LALFree(wave->a);
@@ -157,6 +172,7 @@ void choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave)
 			}
 			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 		}
+		memset( wave->phi, 0, sizeof(REAL4TimeSeries) );
 		if ((wave->shift = (REAL4TimeSeries *) LALMalloc(
 				sizeof(REAL4TimeSeries))) == NULL) {
 			LALFree(wave->a);
@@ -170,6 +186,11 @@ void choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave)
 				wave->h = NULL;
 			}
 			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+		}
+		memset( wave->shift, 0, sizeof(REAL4TimeSeries) );
+		///\bug memóriaszivárgás
+		if (mode != 3) {
+			wave->h = NULL;
 		}
 	}
 

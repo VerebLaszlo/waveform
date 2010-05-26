@@ -1,4 +1,4 @@
-/*
+/**
  * @file util_math.h
  *		Containes own mathemathical functions declarations.
  * @author László Veréb
@@ -45,20 +45,19 @@ size_t multi_Min(size_t array[], size_t length);
 size_t multi_Max(size_t array[], size_t length);
 
 /**		The function calculates the scalar product of two vectors.
- * @param[in]  left		: the left vector
- * @param[in]  right	: the right vector
+ * @param[in]  a1		: the left vector
+ * @param[in]  a2	: the right vector
  * @return	the product
  */
-
-double scalar_Product3(const double a1[], const double a2[3]);
+double scalar_Product3(const double a1[3], const double a2[3]);
 
 /**		The function calculates the wightened vector product of two vectors.
- * @param[in]  left		: the left vector
- * @param[in]  right	: the right vector
+ * @param[in]  a1	: the left vector
+ * @param[in]  a2	: the right vector
  * @param[in]  weight	: the product is multiplied by this value
  * @param[out] product	: the wightened product
  */
-void vector_product3(const double left[3], const double right[3],
+void vector_product3(const double a1[3], const double a2[3],
 		double weight, double product[3]);
 
 #endif /* UTIL_MATH_H */

@@ -17,6 +17,7 @@
 NRCSID(MAINC, "$Id: main.c,v 0.1 2010/05/21");
 
 extern REAL8 lapultsag[2]; ///< \bug be kell rakni a paraméterekbe
+int lalDebugLevel = 3;
 
 int main(int argc, char *argv[]) {
 
@@ -67,6 +68,10 @@ int main(int argc, char *argv[]) {
 			PNString);
 
 	choose_CoherentGW_Component(&mystatus, 3, &thewaveform);
+    if ( mystatus.statusCode ) {
+		ERR_STR_END("HIBA");
+		exit(-1);
+	}
 
 	/*************************************************************************/
 	/******************** ez majd nem kell a végső kódban ********************/
@@ -74,19 +79,39 @@ int main(int argc, char *argv[]) {
 
 	LALGetApproximantFromString(&mystatus, injParams.waveform,
 			&inspiralParams.approximant);
+    if ( mystatus.statusCode ) {
+		ERR_STR_END("HIBA");
+		exit(-1);
+	}
 
 	LALGetOrderFromString(&mystatus, injParams.waveform, &inspiralParams.order);
+    if ( mystatus.statusCode ) {
+		ERR_STR_END("HIBA");
+		exit(-1);
+	}
 
 	/* We fill ppnParams */
 	LALGenerateInspiralPopulatePPN(&mystatus, &ppnParams, &injParams);
+    if ( mystatus.statusCode ) {
+		ERR_STR_END("HIBA");
+		exit(-1);
+	}
 
 	/* we fill inspiralParams structure as well.*/
 	LALGenerateInspiralPopulateInspiral(&mystatus, &inspiralParams, &injParams,
 			&ppnParams);
+    if ( mystatus.statusCode ) {
+		ERR_STR_END("HIBA");
+		exit(-1);
+	}
 
 	ERR_STR_END("interface start");
 	/* the waveform generation itself */
 	interface(&mystatus, &thewaveform, &inspiralParams, &ppnParams);
+    if ( mystatus.statusCode ) {
+		ERR_STR_END("HIBA");
+		exit(-1);
+	}
 	ERR_STR_END("interface end");
 	/* we populate the simInspiral table with the fFinal needed for
 	 template normalisation. */
@@ -110,6 +135,7 @@ int main(int argc, char *argv[]) {
 	}
 	//    fclose(outputfile);
 	ERR_STR_END("Done.");
+	LALCheckMemoryLeaks();
 	return 0;
 }
 
