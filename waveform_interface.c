@@ -44,10 +44,7 @@ void interface(LALStatus *status, CoherentGW *waveform,
 	generator(status->statusPtr, &wave_Params, waveform);
 	CHECKSTATUSPTR(status);
 	CHECKSTATUSPTR(status);
-#if DEBUG==1
-	fprintf(stderr, "generator_end\n");
-	fflush(stderr);
-#endif
+	ERR_STR_END("generator end");
 	count = waveform->f->data->length;
 	/* Check an empty waveform hasn't been returned */
 	for (i = 0; i < waveform->f->data->length; i++) {
@@ -201,8 +198,16 @@ void fill_Params(LALStatus *status, InspiralTemplate *params,
 	wave->chi_Amp[0] = sqrt(wave->chi_Amp[0]);
 	wave->chi_Amp[1] = sqrt(wave->chi_Amp[1]);
 	for (i = 0; i < 3; i++) {
-		wave->chih[0][i] = wave->chi[0][i] / wave->chi_Amp[0];
-		wave->chih[1][i] = wave->chi[1][i] / wave->chi_Amp[1];
+		if (wave->chi_Amp[0] != 0.) {
+			wave->chih[0][i] = wave->chi[0][i] / wave->chi_Amp[0];
+		} else {
+			wave->chih[0][i] = 0.;
+		}
+		if (wave->chi_Amp[1] != 0.) {
+			wave->chih[1][i] = wave->chi[1][i] / wave->chi_Amp[1];
+		} else {
+			wave->chih[1][i] = 0.;
+		}
 	}
 	wave->flatness[0] = lapultsag[0];
 	wave->flatness[1] = lapultsag[1];
