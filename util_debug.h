@@ -1,5 +1,5 @@
 /**
- * @file util_debug.c
+ * @file util_debug.h
  *		Containes simple macros for debugging.
  * @author László Veréb
  * @date 2010.05.21.
