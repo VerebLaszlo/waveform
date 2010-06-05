@@ -86,12 +86,17 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 #endif
 			}
 #ifdef _S1S2_
+#if RENORM==0
 			params->coeff.S1S2_Chih[0] = spin_MPow2[1] / 2.;
 			params->coeff.S1S2_Chih[1] = spin_MPow2[0] / 2.;
 			params->coeff.S1S2_Omega[0] = 721. * params->eta
 					* params->chi_Amp[0] * params->chi_Amp[1] / 48.;
 			params->coeff.S1S2_Omega[1] = -247. * params->coeff.S1S2_Omega[0] / 721.;
 			params->coeff.S1S2_MECO = -spin_MPow2[0] * spin_MPow2[1];
+#else
+			params->coeff.S1S2_Omega[0] = 79. * params->eta * params->chi_Amp[0] * params->chi_Amp[1] / 8.;
+			params->coeff.S1S2_MECO = 2. * spin_MPow2[0] * spin_MPow2[1];
+#endif
 #endif
 			params->coeff.MECO[LAL_PNORDER_TWO] *= (-81. + 57. * params->eta
 					- etaPow2) / 24.;
@@ -170,12 +175,17 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 		case LAL_PNORDER_TWO_POINT_FIVE:
 		case LAL_PNORDER_TWO:
 #ifdef _S1S2_
+#if RENORM==0
 			// S1S2 for domega
 			S1S2_Omega = params->coeff.S1S2_Omega[0] * LNhchih[0] * LNhchih[1]
 					+ params->coeff.S1S2_Omega[1] * chih1chih2;
 			// S1S2 for MECO
 			dvalues[MECO] += params->coeff.S1S2_MECO * (chih1chih2 - 3
 					* LNhchih[0] * LNhchih[1]) * omegaPowi_3[3];
+#else
+			S1S2_Omega = params->coeff.S1S2_Omega[0] * LNhchih[0] * LNhchih[1];
+			dvalues[MECO] += params->coeff.S1S2_MECO * LNhchih[0] * LNhchih[1] * omegaPowi_3[3];
+#endif
 #endif
 #ifdef _SS_
 			// SS for domega

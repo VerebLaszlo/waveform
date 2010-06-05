@@ -15,11 +15,11 @@
 ####################################
 #	debugot is írni
 ####################################
-SPIN=1		# 0 = SO, 1 = S1S2, 2 = SS, 4 = QM
-RENORM=0	# 0 = NOT RENORMALIZED, 1 = RENORMALIZED
+SPIN=7		# 0 = SO, 1 = S1S2, 2 = SS, 4 = QM
+RENORM=1	# 0 = NOT RENORMALIZED, 1 = RENORMALIZED
 DEBUG=0		# 0 = non, 1 = yes
 OTHER=Makefile util_debug.h
-GCC=colorgcc -c -Wall -O3 -W -g3
+GCC=colorgcc -Wall -O3 -W -g3
 #LAL_F=-I/opt/lscsoft/lal/include -L/opt/lscsoft/lal/lib/ -llal
 LIBS=-lm -lrt
 GSL_LIB=-lgsl -lgslcblas
@@ -37,19 +37,19 @@ own : main.c waveform_interface.o waveform.o util_math.o integrator.o ${OTHER}
 	@echo ''
 
 waveform_interface.o : waveform_interface.c waveform_interface.h waveform.o integrator.o ${OTHER}
-	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} waveform_interface.c waveform.o integrator.o
+	${GCC} -c ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} waveform_interface.c waveform.o integrator.o
 	@echo ''
 
 waveform.o : waveform.c waveform.h util_math.o integrator.o ${OTHER}
-	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} ${GSL_LIB_F} -DDEBUG=${DEBUG} -DSPIN=${SPIN} -DRENORM=${RENORM} waveform.c util_math.o integrator.o
+	${GCC} -c ${LIBS} ${LAL_INC} ${LAL_LIB} ${GSL_LIB_F} -DDEBUG=${DEBUG} -DSPIN=${SPIN} -DRENORM=${RENORM} waveform.c util_math.o integrator.o
 	@echo ''
 
 integrator.o : integrator.c integrator.h ${OTHER}
-	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} integrator.c
+	${GCC} -c ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} integrator.c
 	@echo ''
 
 util_math.o : util_math.c util_math.h ${OTHER}
-	${GCC} ${LIBS} util_math.c
+	${GCC} -c ${LIBS} util_math.c
 	@echo ''
 
 clean_run:
