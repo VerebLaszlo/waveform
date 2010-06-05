@@ -10,9 +10,6 @@
 
 NRCSID (WAVEFORMC, "$Id$");
 
-long min_time = 10;
-long max_time = 0;
-
 #if SPIN==1 || SPIN==3 || SPIN==5 || SPIN==7
 #define _S1S2_
 #endif
@@ -86,12 +83,13 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 #endif
 			}
 #ifdef _S1S2_
-#if RENORM==0
 			params->coeff.S1S2_Chih[0] = spin_MPow2[1] / 2.;
 			params->coeff.S1S2_Chih[1] = spin_MPow2[0] / 2.;
+#if RENORM==0
 			params->coeff.S1S2_Omega[0] = 721. * params->eta
 					* params->chi_Amp[0] * params->chi_Amp[1] / 48.;
-			params->coeff.S1S2_Omega[1] = -247. * params->coeff.S1S2_Omega[0] / 721.;
+			params->coeff.S1S2_Omega[1] = -247. * params->coeff.S1S2_Omega[0]
+					/ 721.;
 			params->coeff.S1S2_MECO = -spin_MPow2[0] * spin_MPow2[1];
 #else
 			params->coeff.S1S2_Omega[0] = 79. * params->eta * params->chi_Amp[0] * params->chi_Amp[1] / 8.;
@@ -130,17 +128,12 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 }
 
 int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
-	//struct timespec start, end;
-	//clock_gettime(CLOCK_MONOTONIC, &start);
 	waveform_Params *params = param;
 
 	// variable declaration and initialization
-	const REAL8 *chi_p[2] = {values + CHIH1_1, values + CHIH2_1};
+	const REAL8 *chi_p[2] = { values + CHIH1_1, values + CHIH2_1 };
 	static INT2 i, j, k; // indexes
 	memset(dvalues, 0, NUM_OF_VAR * sizeof(REAL8));
-	/*for (i = OMEGA; i < NUM_OF_VAR; i++) {
-		dvalues[i] = 0.;
-	}*/
 	static REAL8 omegaPowi_3[8];
 	omegaPowi_3[0] = 1.;
 	omegaPowi_3[1] = cbrt(values[OMEGA]);
@@ -156,6 +149,7 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	}
 
 	// calculating domega and MECO without the spin components
+	// 0.5pn-es rész sem kell!!
 	for (i = params->order; i >= LAL_PNORDER_NEWTONIAN; i--) {
 		dvalues[OMEGA] += params->coeff.domega[i] * omegaPowi_3[i];
 	}
@@ -204,8 +198,9 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 				VECTOR_PRODUCT3W(chi_p[k], chi_p[i], params->coeff.S1S2_Chih[i], chih1xchih2[i]);
 				VECTOR_PRODUCT3(values + LNH_1, chi_p[i], LNhxchih[i]);
 				for (j = 0; j < 3; j++) {
-					dvalues[CHIH1_1 + 3 * i + j] += (chih1xchih2[i][j]
-							- 3. * params->coeff.S1S2_Chih[i] * LNhchih[k] * LNhxchih[i][j]) * omegaPowi_3[6];
+					dvalues[CHIH1_1 + 3 * i + j] += (chih1xchih2[i][j] - 3.
+							* params->coeff.S1S2_Chih[i] * LNhchih[k]
+							* LNhxchih[i][j]) * omegaPowi_3[6];
 				}
 #endif
 #ifdef _SS_
@@ -217,7 +212,8 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 				QM_Omega += params->coeff.QM_Omega[i] * LNhchih[i];
 				// QM for dchih
 				for (j = 0; j < 3; j++) {
-					dvalues[CHIH1_1 + 3 * i + j] += params->coeff.QM_Chih[i] * LNhchih[i] * LNhxchih[i][j] * omegaPowi_3[6];
+					dvalues[CHIH1_1 + 3 * i + j] += params->coeff.QM_Chih[i]
+							* LNhchih[i] * LNhxchih[i][j] * omegaPowi_3[6];
 				}
 #endif
 			}
@@ -228,12 +224,16 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 					* omegaPowi_3[LAL_PNORDER_TWO];
 		case LAL_PNORDER_ONE_POINT_FIVE:
 			for (i = 0; i < 2; i++) {
-				dvalues[OMEGA] += params ->coeff.SO_Omega[i] * LNhchih[i] * omegaPowi_3[LAL_PNORDER_ONE_POINT_FIVE];
-				dvalues[MECO] += params->coeff.SO_MECO[i] * LNhchih[i] * omegaPowi_3[2];
+				dvalues[OMEGA] += params ->coeff.SO_Omega[i] * LNhchih[i]
+						* omegaPowi_3[LAL_PNORDER_ONE_POINT_FIVE];
+				dvalues[MECO] += params->coeff.SO_MECO[i] * LNhchih[i]
+						* omegaPowi_3[2];
 			}
 			for (i = 0; i < 3; i++) {
-				dvalues[CHIH1_1 + i] += params->coeff.SO_Chih[0] * LNhxchih[0][i] * omegaPowi_3[5];
-				dvalues[CHIH2_1 + i] += params->coeff.SO_Chih[1] * LNhxchih[1][i] * omegaPowi_3[5];
+				dvalues[CHIH1_1 + i] += params->coeff.SO_Chih[0]
+						* LNhxchih[0][i] * omegaPowi_3[5];
+				dvalues[CHIH2_1 + i] += params->coeff.SO_Chih[1]
+						* LNhxchih[1][i] * omegaPowi_3[5];
 				dvalues[LNH_1 + i] += (params->coeff.dLNh[0] * dvalues[CHIH1_1
 						+ i] + params->coeff.dLNh[1] * dvalues[CHIH2_1 + i])
 						* omegaPowi_3[1];
@@ -249,9 +249,6 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	dvalues[PHASE] = values[OMEGA] + values[LNH_3] * (values[LNH_2]
 			* dvalues[LNH_1] - values[LNH_1] * dvalues[LNH_2])
 			/ (SQR(values[LNH_1]) + SQR(values[LNH_2]));
-	//fprintf(stderr, "%lg\n", t);
-	//clock_gettime(CLOCK_MONOTONIC, &end);
-	//ERR_TIME_DIFF(&end, &start);
 	return GSL_SUCCESS;
 }
 
@@ -292,8 +289,6 @@ void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform)
 	dvalues[MECO] = -1.; // to be able to start the loop
 	i = 0;
 	ERR_STR_END("while start")
-//	struct timespec start, end;
-//	clock_gettime(CLOCK_MONOTONIC, &start);
 	while (dvalues[MECO] < 0. && dvalues[OMEGA] > 0.0 && SQR(values[LNH_3])
 			< 1. - LNhztol && values[OMEGA] / freq_Step < params->sampling_Freq
 			/ 2.) {
@@ -348,8 +343,6 @@ void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform)
 		 fflush(stdout);*/
 #endif
 	}
-//	clock_gettime(CLOCK_MONOTONIC, &end);
-//	ERR_TIME_DIFF(&end, &start);
 	ERR_STR_END("while end");
 	waveform->f->data->length = i;
 	ERR_D(i);

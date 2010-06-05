@@ -59,7 +59,7 @@ if (DEBUG==1)						\
 			__FILE__, __LINE__, X);	\
 	fflush(stderr);
 
-#define ERR_TIME_DIFF(END, START)									\
+#define ERR_TIME_DIFF(END, START)								\
 /*	if (DEBUG==1)*/												\
 		fprintf(stderr, "%s %d time: %ld\n",					\
 				__FILE__, __LINE__,								\

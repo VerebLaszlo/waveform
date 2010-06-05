@@ -74,82 +74,84 @@ typedef struct waveform_Params_Tag {
 
 /**		The function fills the coefficients structure with the needed
  *	coefficients for generating the waveform up to the given PN-order.
+ *
+ *	The orders above 2PN are incomplete, so use them if you want to try their
+ *	effects.
  * @param[in,out]	status	: LAL universal status structure
  * @param[in,out]	params	: the generator's parameters
  */
 void fill_Coefficients(LALStatus *status, waveform_Params * const params);
 
 /**		The function calculates the derived values.
+ * The formulas are:
  *	\f{eqnarray}{
- *		\newcommand{\OM}[1]{\left(M\omega\right)^{#1/3}}
- *	\XX{\eta}
- *		\frac{d\hat{\BM{\chi}}_i}{d\left(t/M\right)}={SO}_{\chi}^i\OM{5}+
- *		\left({S1S2}_{\chi}^i+{QM}_{\chi}^i\right)\OM{6};\quad
- *		{OS}_{\chi}^i=\frac{\eta}{2}\left(4+3\frac{m_j}{m_i}\right);\quad
- *		{S1S2}_{\chi}^i=\frac{1}{2}\frac{\chi_jm_j^2}{M^2};\quad
- *		{QM}_{\chi}^2=-\frac{3}{2}\eta\chi_iw_i\\
  *		\newcommand{\BM}[1]{\mbox{\boldmath$#1$}}
- *		\frac{d\hat{\BM{L_N}}}{d\left(t/M\right)}=-\frac{1}{\eta}
- *	\f}
- *	\f[
  *		\newcommand{\OM}[1]{\left(M\omega\right)^{#1/3}}
- *		\frac{d\hat{\BM{L_N}}}{d\left(t/M\right)}=-\frac{1}{\eta}
- *		\left[
- *			\sum_{i=1,j}\frac{\chi_i m_i^2}{M^2}
- *			\frac{d\hat{\BM{\chi}}_i}{d\left(t/M\right)}
- *		\right]\OM{6}
- *	\f]
- *	\f[
- *		\frac{d\hat{\chi}_i}{d\left(t/m\right)}=\frac{\eta}{2}
- *		\left(4+3\frac{m_j}{m_i}\right)\hat{L}_N\times\hat{\chi}_i
- *		\left(M\omega\right)^{5/3}+\frac{\chi_j m_j^2}{2 M^2}
- *		\left[
- *			\hat{\chi}_j-3
- *			\left(\hat{L}_N\hat{\chi}_j\right)\hat{L}_N
- *		\right]\times\hat{\chi}_i\left(M\omega\right)^{6/3};\quad
- *		\frac{d\hat{L}_N}{d\left(t/M\right)}=-\frac{1}{\eta}
- *		\left[
- *			\sum_{i=1,j}\frac{\chi_i m_i^2}{M^2}
- *			\frac{d\hat{\chi}_i}{d\left(t/M\right)}
- *		\right]\left(M\omega\right)^{6/3}
- *	\f]
- *	\f[
- *		\frac{d\left(M\omega\right)}{d\left(t/M\right)}=
- *		\frac{96\eta}{5}\left(M\omega\right)^{11/3}
- *		\left[
- *			1-\frac{743+924\eta}{336}\left(M\omega\right)^{2/3}+
- *			\left(4\pi-\sigma_{SO_Omega}\right)\left(M\omega\right)^{3/3}+
- *			\left(
- *				\frac{34103}{18144}+\frac{13661}{2016}\eta+
- *				\frac{59}{18}\eta^2+\sigma_{S1S2_Omega}+\sigma_{SS_Omega}+\sigma_{QM_Omega}
- *			\right)\left(M\omega\right)^{4/3}-
- *			\frac{4159+15876\eta}{672}\pi\left(M\omega\right)^{5/3}
- *		\right]
- *	\f]
- *	\f[
- *		\sigma_{SO_Omega}=\frac{1}{12}\sum_{i,j}\frac{\chi_i m_i^2}{M^2}
- *			\left(113+75\frac{m_j}{m_i}\right)\hat{L}_N\hat{\chi}_i;\quad
- *		\sigma_{S1S2_Omega}=\frac{\eta\chi_1\chi_2}{48}
- *		\left[
- *			721\left(\hat{L}_N\hat{\chi}_1\right)
- *			\left(
- *				(\hat{L}_N\hat{\chi}_2\right)-247\left(\hat{\chi}_1\hat{\chi}_2
- *			\right)
- *		\right];\quad
- *	\f]
- *	\f[
- *		\sigma_{SS_Omega}=\frac{1}{96}\sum_{i,j}\frac{\chi_i^2 m_i^2}{M^2}
- *			\left[7-\left(\hat{L}_N\hat{\chi}_i\right)\right];\quad
- *		\sigma_{QM_Omega}=\frac{5}{2}\sum_{i,j}\frac{\chi_i^2 m_i^2 a_i}{M^2}
- *			\left[3\left(\hat{L}_N\hat{\chi}_i\right)^2-1\right]
- *	\f]
+ *		\newcommand{\SPU}[2]{\left(\BM{\hat{#1}\hat{#2}}\right)}
+ *		\newcommand{\VPU}[2]{\left(\BM{\hat{#1}\times\hat{#2}}\right)}
+ *		\begin{array}{c}	
+ *			\displaystyle\frac{d\BM{\hat{\chi_i}}}{d\left(t/M\right)}=
+ *				{SO}_{\chi}^i\OM{5}+\left({S1S2}_{\chi}^i+{QM}_{\chi}^i\right)\OM{6}\\
+ *			\displaystyle{SO}_{\chi}^i=\frac{\eta}{2}\left(4+3\frac{m_j}{m_i}\right)\VPU{L_N}{\chi_i};\quad
+ *			{S1S2}_{\chi}^i=\frac{1}{2}\frac{\chi_jm_j^2}{M^2}\left[\BM{\hat{\chi_j}}
+ *				-3\SPU{L_N}{\chi_j}\BM{\hat{L_N}}\right]\times\BM{\hat{\chi_i}};\quad
+ *			{QM}_{\chi}^i=-\frac{3}{2}\eta\chi_iw_i\SPU{L_N}{\chi_i}\VPU{L_N}{\chi_i}
+ *		\end{array}\\
+ *		\newcommand{\BM}[1]{\mbox{\boldmath$#1$}}
+ *		\frac{d\BM{\hat{L_N}}}{d\left(t/M\right)}=\sum_{i}-
+ *			\frac{1}{\eta}\frac{\chi_im_i^2}{M^2}\frac{d\BM{\hat{\chi_i}}}
+ *			{d\left(t/M\right)}\\
+ *		\newcommand{\BM}[1]{\mbox{\boldmath$#1$}}
+ *		\newcommand{\OM}[1]{\left(M\omega\right)^{#1/3}}
+ *		\newcommand{\SPU}[2]{\left(\BM{\hat{#1}\hat{#2}}\right)}
+ *		\begin{array}{c}
+ *			\displaystyle\frac{d\left(M\omega\right)}{d\left(t/M\right)}=
+ *				\frac{96\eta}{5}\OM{11}
+ *			\left[
+ *				1-\frac{743+924\eta}{336}\OM{2}+\left(4\pi
+ *					+SO_{\omega}\right)\OM{3}+\left(\frac{34103}{18144}+
+ *					\frac{13661}{2016}\eta+\frac{59}{18}\eta^2+
+ *					S1S2_{\omega}+Si^2_{\omega}+QM_{\omega}\right)\OM{4}
+ *			\right]\\
+ *			\displaystyle SO_{\omega}=\sum_{i\ne j}-
+ *				\frac{1}{12}\frac{\chi_im_i^2}{M^2}
+ *				\left(113+75\frac{m_j}{m_i}\right)\SPU{L_N}{\chi_i};\quad
+ *			S1S2_{\omega}=\frac{\eta\chi_1\chi_2}{48}
+ *				\left[721\SPU{L_N}{\chi_1}\SPU{L_N}{\chi_2}-247\SPU{\chi_1}{\chi_2}\right]\\
+ *			\displaystyle SS_{\omega}=\sum_{i}\frac{1}{96}\frac{\chi_im_i}{M^2}
+ *			\chi_i\left[7-\SPU{L_N}{\chi_i}^2\right];\quad
+ *			QM_{\omega}=\sum_{i}\frac{5}{2}\frac{\chi_im_i^2}{M^2}\chi_iw_i
+ *				\left[3\SPU{L_N}{\chi_i}-1\right]
+ *		\end{array}\\
+ *		\newcommand{\BM}[1]{\mbox{\boldmath$#1$}}
+ *		\newcommand{\OM}[1]{\left(M\omega\right)^{#1/3}}
+ *		\newcommand{\SP}[2]{\left(\BM{#1}\BM{#2}\right)}
+ *		\begin{array}{c}
+ *			\displaystyle MECO=-5\eta\frac{2}{3}\OM{-1}+\left(5\eta\frac{4}{3}
+ *				\frac{9+\eta}{12}\right)\OM{1}+SO_{MECO}\OM{2}+
+ *				\left(5\eta\frac{6}{3}\frac{81-57\eta+\eta^2}{24}+
+ *				S1S2_{MECO}+QM_{MECO}\right)\OM{3}\\
+ *			\displaystyle
+ *			SO_{MECO}=\sum_{i}-\frac{5}{9}\eta\frac{\chi_im_i^2}{M^2}
+ *				\left(4+3\frac{m_j}{m_i}\right)\SP{\hat{L}_N}{\hat{\chi}_i};\quad
+ *			S1S2_{MECO}=-\frac{\chi_1m_1^2}{M^2}\frac{\chi_2m_2^2}{M^2}
+ *				\left[\SP{\hat{\chi}_1}{\hat{\chi}_2}-3\SP{\hat{L}_N}
+ *				{\hat{\chi}_1}\SP{\hat{L}_N}{\hat{\chi}_2}\right];\quad
+ *			QM_{MECO}=2\eta QM_{\omega}
+ *		\end{array}
+ *	\f}
+ *	The constant parts are calculated by the fill_Coefficients() function and
+ *	then used in this function applying the dynamic parts: the products of the
+ *	vectors and the powers of the \f$M\omega\f$.
+ *
+ *	The orders above 2PN are incomplete, so use them if you want to try their
+ *	effects.
  * @param[in]	t		: evolution time, not in used
  * @param[in]	values	: the values to be derivated
  * @param[out]	dvalues	: the derivated values and the last element is the MECO
  * @param[in]	params	: the generator's parameters
  */
 int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * params);
-
 /**		Enumeration to index the dynamic variables in the generator function.
  */
 typedef enum {

@@ -48,34 +48,37 @@ void interface(LALStatus *status, CoherentGW *waveform,
 	count = waveform->f->data->length;
 	/* Check an empty waveform hasn't been returned */
 	/*for (i = 0; i < waveform->f->data->length; i++) {
-		if (waveform->phi->data->data[i] != 0.0)
-			break;
-	}*/
+	 if (waveform->phi->data->data[i] != 0.0)
+	 break;
+	 }*/
 
 	{
 		if (waveform->a != NULL) {
-		phiC = waveform->phi->data->data[waveform->f->data->length - 1];
+			phiC = waveform->phi->data->data[waveform->f->data->length - 1];
 
-		for (i = 0; i < waveform->f->data->length; i++) {
-			waveform->phi->data->data[i] = -phiC + waveform->phi->data->data[i]
-					+ ppnParams->phi;
+			for (i = 0; i < waveform->f->data->length; i++) {
+				waveform->phi->data->data[i] = -phiC
+						+ waveform->phi->data->data[i] + ppnParams->phi;
+			}
+			waveform->a->deltaT = waveform->f->deltaT = waveform->phi->deltaT
+					= waveform->shift->deltaT = 1. / params->tSampling;
+
+			waveform->a->sampleUnits = lalStrainUnit;
+			waveform->f->sampleUnits = lalHertzUnit;
+			waveform->phi->sampleUnits = lalDimensionlessUnit;
+			waveform->shift->sampleUnits = lalDimensionlessUnit;
+
+			waveform->position = ppnParams->position;
+			waveform->psi = ppnParams->psi;
+
+			snprintf(waveform->a->name, LALNameLength,
+					"STPN inspiral amplitudes");
+			snprintf(waveform->f->name, LALNameLength,
+					"STPN inspiral frequency");
+			snprintf(waveform->phi->name, LALNameLength, "STPN inspiral phase");
+			snprintf(waveform->shift->name, LALNameLength,
+					"STPN inspiral polshift");
 		}
-		waveform->a->deltaT = waveform->f->deltaT = waveform->phi->deltaT
-				= waveform->shift->deltaT = 1. / params->tSampling;
-
-		waveform->a->sampleUnits = lalStrainUnit;
-		waveform->f->sampleUnits = lalHertzUnit;
-		waveform->phi->sampleUnits = lalDimensionlessUnit;
-		waveform->shift->sampleUnits = lalDimensionlessUnit;
-
-		waveform->position = ppnParams->position;
-		waveform->psi = ppnParams->psi;
-
-		snprintf(waveform->a->name, LALNameLength, "STPN inspiral amplitudes");
-		snprintf(waveform->f->name, LALNameLength, "STPN inspiral frequency");
-		snprintf(waveform->phi->name, LALNameLength, "STPN inspiral phase");
-		snprintf(waveform->shift->name, LALNameLength, "STPN inspiral polshift");
-		}	
 		/* --- fill some output ---*/
 		ppnParams->tc = (REAL8) (count - 1) / params->tSampling;
 		ppnParams->length = count;

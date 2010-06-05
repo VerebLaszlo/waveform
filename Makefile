@@ -10,17 +10,12 @@
 #	5. ha nem találja a könyvtárakat, add hozzá az útvonalakat, az			#
 #	/etc/ld.so.conf fájlhoz, és hajtsd végra a ldconfig parancsot.			#
 #############################################################################
-#
 
-####################################
-#	debugot is írni
-####################################
-SPIN=7		# 0 = SO, 1 = S1S2, 2 = SS, 4 = QM
-RENORM=1	# 0 = NOT RENORMALIZED, 1 = RENORMALIZED
+SPIN=1		# 0 = SO, 1 = S1S2, 2 = SS, 4 = QM
+RENORM=0	# 0 = NOT RENORMALIZED, 1 = RENORMALIZED
 DEBUG=0		# 0 = non, 1 = yes
 OTHER=Makefile util_debug.h
 GCC=colorgcc -Wall -O3 -W -g3
-#LAL_F=-I/opt/lscsoft/lal/include -L/opt/lscsoft/lal/lib/ -llal
 LIBS=-lm -lrt
 GSL_LIB=-lgsl -lgslcblas
 LAL_INC=-I/opt/lscsoft/lal/include -I/opt/lscsoft/lalinspiral/include -I/opt/lscsoft/lalmetaio/include
