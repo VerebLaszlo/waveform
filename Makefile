@@ -15,40 +15,41 @@
 ####################################
 #	debugot is írni
 ####################################
-SPIN=0	# 0 = SO, 1 = S1S2, 2 = SS, 4 = QM
-OLD=0	# 1 = LALSTPN, 0 = LALSTPN + SS + QM
-DEBUG=0	# 0 = non, 1 = yes
-OTHERS=Makefile util_debug.h
-ALL_F=colorgcc -c -Wall
-#LAL_F=-I/opt/lscsoft/lal/include -L/opt/lscsoft/lal/lib/ -llal 
-GSL_LIB_F=-lgsl -lgslcblas
-LAL_INC_F=-I/opt/lscsoft/lal/include -I/opt/lscsoft/lalinspiral/include -I/opt/lscsoft/lalmetaio/include
-LAL_LIB_F=-L/opt/lscsoft/lal/lib/ -L/opt/lscsoft/lalinspiral/lib/ -llal -llalinspiral
+SPIN=1		# 0 = SO, 1 = S1S2, 2 = SS, 4 = QM
+RENORM=0	# 0 = NOT RENORMALIZED, 1 = RENORMALIZED
+DEBUG=0		# 0 = non, 1 = yes
+OTHER=Makefile util_debug.h
+GCC=colorgcc -c -Wall -O3 -W -g3
+#LAL_F=-I/opt/lscsoft/lal/include -L/opt/lscsoft/lal/lib/ -llal
+LIBS=-lm -lrt
+GSL_LIB=-lgsl -lgslcblas
+LAL_INC=-I/opt/lscsoft/lal/include -I/opt/lscsoft/lalinspiral/include -I/opt/lscsoft/lalmetaio/include
+LAL_LIB=-L/opt/lscsoft/lal/lib/ -L/opt/lscsoft/lalinspiral/lib/ -llal -llalinspiral
 
 all: own lal
 
 lal : LALSTPNWaveformTestMod.c
-	gcc -Wall ${LAL_F} ${LAL_INC_F} ${LAL_LIB_F} -DDEBUG=${DEBUG} -o lal LALSTPNWaveformTestMod.c
+	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} -o lal LALSTPNWaveformTestMod.c
 	@echo ''
 
-own : main.c waveform_interface.o waveform.o util_math.o integrator.o ${OTHERS}
-	gcc -Wall ${LAL_F} ${LAL_INC_F} ${LAL_LIB_F} -DDEBUG=${DEBUG} -o own main.c waveform_interface.o waveform.o util_math.o integrator.o
+own : main.c waveform_interface.o waveform.o util_math.o integrator.o ${OTHER}
+	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} -o own main.c waveform_interface.o waveform.o util_math.o integrator.o
 	@echo ''
 
-waveform_interface.o : waveform_interface.c waveform_interface.h waveform.o integrator.o ${OTHERS}
-	${ALL_F} ${LAL_INC_F} ${LAL_LIB_F} -DDEBUG=${DEBUG} waveform_interface.c waveform.o integrator.o
+waveform_interface.o : waveform_interface.c waveform_interface.h waveform.o integrator.o ${OTHER}
+	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} waveform_interface.c waveform.o integrator.o
 	@echo ''
 
-waveform.o : waveform.c waveform.h util_math.o integrator.o ${OTHERS}
-	${ALL_F} ${LAL_INC_F} ${LAL_LIB_F} -DDEBUG=${DEBUG} -DOLD=${OLD} -DSPIN=${SPIN} ${GSL_LIB_F} waveform.c util_math.o integrator.o  -lm
+waveform.o : waveform.c waveform.h util_math.o integrator.o ${OTHER}
+	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} ${GSL_LIB_F} -DDEBUG=${DEBUG} -DSPIN=${SPIN} -DRENORM=${RENORM} waveform.c util_math.o integrator.o
 	@echo ''
 
-integrator.o : integrator.c integrator.h ${OTHERS}
-	${ALL_F} ${LAL_INC_F} ${LAL_LIB_F} -DDEBUG=${DEBUG} integrator.c -lm
+integrator.o : integrator.c integrator.h ${OTHER}
+	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} integrator.c
 	@echo ''
 
-util_math.o : util_math.c util_math.h ${OTHERS}
-	${ALL_F} util_math.c -lm
+util_math.o : util_math.c util_math.h ${OTHER}
+	${GCC} ${LIBS} util_math.c
 	@echo ''
 
 clean_run:
@@ -66,7 +67,7 @@ clean :
 
 run :
 	./own `tail -n 1 input.data`
-	./lal `head -n 2 input.data | tail -n 1 `
+	./lal `head -n 2 input.data | tail -n 1`
 	@echo ''
 
 help :

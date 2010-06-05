@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 	LALSnprintf(injParams.waveform, LIGOMETA_WAVEFORM_MAX * sizeof(CHAR),
 			PNString);
 
-	choose_CoherentGW_Component(&mystatus, 3, &thewaveform);
+	choose_CoherentGW_Component(&mystatus, 1, &thewaveform);
 
 	/*************************************************************************/
 	/******************** ez majd nem kell a végső kódban ********************/
@@ -103,7 +103,8 @@ int main(int argc, char *argv[]) {
 	outputfile = fopen(filename, "w");
 
 	length = thewaveform.f->data->length;
-	dt = thewaveform.phi->deltaT;
+	//dt = thewaveform.phi->deltaT;
+	dt = ppnParams.deltaT;
 	for (i = 0; i < length; i++) {
 		fprintf(outputfile, "%e\t%e\t%e\n", i * dt, thewaveform.h->data->data[2
 				* i], thewaveform.h->data->data[2 * i + 1]);

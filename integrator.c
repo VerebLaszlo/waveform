@@ -42,10 +42,11 @@ void integrator_Func(LALStatus *status, integrator_System *integrator,
 				integrator->solver_control, integrator->solver_step,
 				&(integrator->solver_system), &time, step, &step_X, values);
 		if (time == time_Old) {
-			INT2 i;
+			memset(values, 0, integrator->solver_system.dimension + 1);
+			/*INT2 i;
 			for (i = 0; i < integrator->solver_system.dimension + 1; i++) {
 				values[i] = 0.;
-			}
+			}*/
 			ABORT(status, LALINSPIRALH_ESTOPPED, LALINSPIRALH_MSGESTOPPED);
 		}
 	}

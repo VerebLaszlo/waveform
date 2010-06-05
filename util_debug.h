@@ -9,6 +9,7 @@
 #define DEBUG_H
 
 #include <stdio.h>
+#include <time.h>
 
 /**		Writes the current file name and line number.
  */
@@ -57,5 +58,13 @@ if (DEBUG==1)						\
 	fprintf(stderr, "%s %d: %p\n",	\
 			__FILE__, __LINE__, X);	\
 	fflush(stderr);
+
+#define ERR_TIME_DIFF(END, START)									\
+/*	if (DEBUG==1)*/												\
+		fprintf(stderr, "%s %d time: %ld\n",					\
+				__FILE__, __LINE__,								\
+				(((END)->tv_sec - (START)->tv_sec) * 1000000000	\
+				+ (END)->tv_nsec - (START)->tv_nsec));			\
+		fflush(stderr);
 
 #endif /* debug.h */
