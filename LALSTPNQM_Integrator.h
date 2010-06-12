@@ -13,19 +13,21 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_odeiv.h>
 
+#include <lal/LALInspiral.h>
+#include <lal/LALGSL.h>
 #include <lal/LALStatusMacros.h>
 
-NRCSID (INTEGRATORH, "$Id$");
+NRCSID (INTEGRATORH, "$Id LALSTPNQM_Integrator.h$");
 
 /**		The structure contains the integrator.
  */
-typedef struct integrator_System_Tag {
+typedef struct {
 	const gsl_odeiv_step_type* solver_type;
 	gsl_odeiv_step* solver_step;
 	gsl_odeiv_control* solver_control;
 	gsl_odeiv_evolve* solver_evolve;
 	gsl_odeiv_system solver_system;
-} integrator_System;
+} LALSTPNQM_Integrator_System;
 
 /**		The function initialize the integrator.
  * @param[in,out]	status	: The LAL universal status structure
@@ -34,9 +36,9 @@ typedef struct integrator_System_Tag {
  * @param[in]	derivator	: pointer to the derivator function
  * @param[out]	integrator	: the structure conaining the integrator
  */
-void integrator_init(LALStatus *status, INT2 num, void *params,
+void LALSTPNQM_Integrator_Init(LALStatus *status, INT2 num, void *params,
 		int(*derivator)(REAL8, const REAL8[], REAL8[], void *),
-		integrator_System *integrator);
+		LALSTPNQM_Integrator_System *integrator);
 
 /**		The function evolves the system with the given time-step.
  * @param[in,out]	status	: The LAL universal status structure
@@ -45,13 +47,13 @@ void integrator_init(LALStatus *status, INT2 num, void *params,
  * @param[in,out]	values	: as input parameters the system's actual position,
  * as ouput the system's next position.
  */
-void integrator_Func(LALStatus *status, integrator_System *integrator,
+void LALSTPNQM_Integrator_Func(LALStatus *status, LALSTPNQM_Integrator_System *integrator,
 		REAL8 step, REAL8 values[]);
 
 /**		The function deallocates the integrator.
  * @param[in,out]	status	: The LAL universal status structure
  * @param[in]	integrator	: the integrator
  */
-void integrator_free(LALStatus *status, integrator_System *integrator);
+void LALSTPNQM_Integrator_Free(LALStatus *status, LALSTPNQM_Integrator_System *integrator);
 
 #endif /* INTEGRATOR_H */

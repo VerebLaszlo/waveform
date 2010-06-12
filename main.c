@@ -12,12 +12,13 @@
 #include <lal/GenerateInspiral.h>
 
 #include "util_debug.h"
-#include "waveform_interface.h"
+#include "LALSTPNQM_Waveform_Interface.h"
 
 NRCSID(MAINC, "$Id: main.c,v 0.1 2010/05/21");
 
+int lalDebugLevel = 0;
+
 extern REAL8 lapultsag[2]; ///< \bug be kell rakni a paraméterekbe
-int lalDebugLevel = 3;
 
 int main(int argc, char *argv[]) {
 
@@ -32,7 +33,10 @@ int main(int argc, char *argv[]) {
 	REAL8 dt;
 	char PNString[50];
 
-	if (argc != 18) {
+	if (argc == 19) {
+		lalDebugLevel = atoi(argv[18]);
+		printf("%d\n", lalDebugLevel);
+	} else if (argc != 18) {
 		printf(
 				"                         1  2  3   4   5   6   7   8   9     10    11   12      13      14       15 16      17\n");
 		printf(
@@ -67,60 +71,17 @@ int main(int argc, char *argv[]) {
 	LALSnprintf(injParams.waveform, LIGOMETA_WAVEFORM_MAX * sizeof(CHAR),
 			PNString);
 
-	choose_CoherentGW_Component(&mystatus, 3, &thewaveform);
-    if ( mystatus.statusCode ) {
-		ERR_STR_END("HIBA");
-		exit(-1);
+	LALSTPNQM_Choose_CoherentGW_Component(&mystatus, 1, &thewaveform);
+
+	interface(&mystatus, &thewaveform, &injParams, &ppnParams);
+	if (mystatus.statusCode && (lalDebugLevel > 0)) {
+		fprintf(stderr, "Error[0] 1: program %s, file %s, line %i, %s\n"
+			"         Function interface() failed\n", argv[0], __FILE__,
+				__LINE__, MAINC);
 	}
-
-	/*************************************************************************/
-	/******************** ez majd nem kell a végső kódban ********************/
-	InspiralTemplate inspiralParams; // structure for inspiral package
-
-	LALGetApproximantFromString(&mystatus, injParams.waveform,
-			&inspiralParams.approximant);
-    if ( mystatus.statusCode ) {
-		ERR_STR_END("HIBA");
-		exit(-1);
-	}
-
-	LALGetOrderFromString(&mystatus, injParams.waveform, &inspiralParams.order);
-    if ( mystatus.statusCode ) {
-		ERR_STR_END("HIBA");
-		exit(-1);
-	}
-
-	/* We fill ppnParams */
-	LALGenerateInspiralPopulatePPN(&mystatus, &ppnParams, &injParams);
-    if ( mystatus.statusCode ) {
-		ERR_STR_END("HIBA");
-		exit(-1);
-	}
-
-	/* we fill inspiralParams structure as well.*/
-	LALGenerateInspiralPopulateInspiral(&mystatus, &inspiralParams, &injParams,
-			&ppnParams);
-    if ( mystatus.statusCode ) {
-		ERR_STR_END("HIBA");
-		exit(-1);
-	}
-
-	ERR_STR_END("interface start");
-	/* the waveform generation itself */
-	interface(&mystatus, &thewaveform, &inspiralParams, &ppnParams);
-    if ( mystatus.statusCode ) {
-		ERR_STR_END("HIBA");
-		exit(-1);
-	}
-	ERR_STR_END("interface end");
-	/* we populate the simInspiral table with the fFinal needed for
-	 template normalisation. */
-	injParams.f_final = inspiralParams.fFinal;
-	/******************************** eddig extra *****************************/
-	/**************************************************************************/
-
+	/* Print result. */
 	if (mystatus.statusCode) {
-		fprintf(stderr, "LALSTPNWaveformTest: error generating waveform\n");
+		fprintf(stderr, "LALSTPNQMWaveformTest: error generating waveform\n");
 		exit(1);
 	}
 	/* --- and finally save in a file --- */
@@ -128,7 +89,8 @@ int main(int argc, char *argv[]) {
 	outputfile = fopen(filename, "w");
 
 	length = thewaveform.f->data->length;
-	dt = thewaveform.phi->deltaT;
+	//dt = thewaveform.phi->deltaT;
+	dt = ppnParams.deltaT;
 	for (i = 0; i < length; i++) {
 		fprintf(outputfile, "%e\t%e\t%e\n", i * dt, thewaveform.h->data->data[2
 				* i], thewaveform.h->data->data[2 * i + 1]);
@@ -136,6 +98,7 @@ int main(int argc, char *argv[]) {
 	//    fclose(outputfile);
 	ERR_STR_END("Done.");
 	LALCheckMemoryLeaks();
-	return 0;
+	REPORTSTATUS(&mystatus);
+	return mystatus.statusCode;
 }
 

@@ -1,5 +1,5 @@
 m1			m2			s1x			s1y			s1z			s2x			s2y			s2z				incl		fmin	fmax	dist	dt				pnorder				output
 3.5531152	3.35868784	0.077934276	0.156671629 0.967892924	0.107035774 -0.155060057 0.882409491	1.429888	50		600		1		6.1035156e-05	twoPN lal.out
 
-m1			m2			s1x			s1y			s1z			s2x			s2y			s2z				fl1	fl2	incl		fmin	fmax	dist	dt				pnorder				output
-3.5531152	3.35868784	0.077934276	0.156671629 0.967892924	0.107035774 -0.155060057 0.882409491	1.	1.	1.429888	50		600		1		6.1035156e-05	twoPN own.out
+m1			m2			s1x			s1y			s1z			s2x			s2y				s2z			fl1	fl2	incl		fmin	fmax	dist	dt				pnorder	output	debug_Level
+3.5531152	3.35868784	0.077934276	0.156671629 0.967892924	0.107035774	-0.155060057	0.882409491	1.	1.	1.429888	50		600		1		.1035156e-05	twoPN 	own.out	16391

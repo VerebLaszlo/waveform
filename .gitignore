@@ -8,16 +8,19 @@ doc
 .*
 !.gitignore
 
-# eclipse egy folderja
+# folderok
 Debug
+temp
+proba*
+waves
 
-*~
+# fordítási és futtatási fájlok
+lal*
+own*
 *.b
 *out
-lal
-own
-LALSTPN*
-waves
-proba
+
+# egyéb
+*~
 *.cx
 *.hx
