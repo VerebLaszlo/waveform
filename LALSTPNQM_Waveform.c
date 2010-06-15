@@ -1,28 +1,53 @@
 /**
- * @file waveform.c
- *		Containes the function definition to create GWforms.
+ * @file LALSTPNQM_Waveform.c
+ *		Contains the function definition to create GWforms.
  * @author László Veréb
  * @date 2010.05.21.
  */
 
-#include "waveform.h"
-#include "integrator.h"
+#include "LALSTPNQM_Waveform.h"
+#include "LALSTPNQM_Integrator.h"
 
-NRCSID (WAVEFORMC, "$Id$");
+NRCSID (WAVEFORMC, "$Id LALSTPNQM_Waveform.c$");
 
-#if SPIN==1 || SPIN==3 || SPIN==5 || SPIN==7
-#define _S1S2_
-#endif
-#if SPIN==2 || SPIN==3 || SPIN==6 || SPIN==7
-#define _SS_
-#endif
-#if SPIN==4 || SPIN==5 || SPIN==6 || SPIN==7
-#define _QM_
-#endif
+/**		The macro function returns the square of the argument.
+ * \warn Do not use with incrementing or decrementing operators!
+ * @param[in] a	 : the number
+ * @return the square of the number
+ */
+#define SQR(a) ((a)*(a))
 
-void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
-	INITSTATUS(status, "fill_Coefficients", WAVEFORMC);
-	ATTATCHSTATUSPTR(status);
+/**		The function calculates the scalar product of two vectors.
+ * @param[in]  a1		: the left vector
+ * @param[in]  a2	: the right vector
+ * @return	the product
+ */
+#define SCALAR_PRODUCT3(a1, a2) \
+	((a1)[0] * (a2)[0] + (a1)[1] * (a2)[1] + (a1)[2] * (a2)[2]);
+
+/**		The function calculates the weighted vector product of two vectors.
+ * @param[in]  left		: the left vector
+ * @param[in]  right	: the right vector
+ * @param[in]  weight	: the product is multiplied by this value
+ * @param[out] product	: the weighted product
+ */
+#define VECTOR_PRODUCT3W(left, right, weight, product)\
+	(product)[0] = (weight) * ((left)[1] * (right)[2] - (left)[2] * (right)[1]);\
+	(product)[1] = (weight) * ((left)[2] * (right)[0] - (left)[0] * (right)[2]);\
+	(product)[2] = (weight) * ((left)[0] * (right)[1] - (left)[1] * (right)[0]);
+
+/**		The function calculates the vector product of two vectors.
+ * @param[in]  left		: the left vector
+ * @param[in]  right	: the right vector
+ * @param[out] product	: the vector product
+ */
+#define VECTOR_PRODUCT3(left, right, product)\
+	(product)[0] = ((left)[1] * (right)[2] - (left)[2] * (right)[1]);\
+	(product)[1] = ((left)[2] * (right)[0] - (left)[0] * (right)[2]);\
+	(product)[2] = ((left)[0] * (right)[1] - (left)[1] * (right)[0]);
+
+void LALSTPNQM_Fill_Coefficients(LALStatus *status, LALSTPNQM_Waveform_Params * const params) {
+	INITSTATUS(status, "LALSTPNQM_Fill_Coefficients", WAVEFORMC);
 
 	// variable declaration and initialization
 	REAL8 thetahat = 1039. / 4620.;
@@ -66,51 +91,53 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 		case LAL_PNORDER_TWO:
 			params->coeff.domega[LAL_PNORDER_TWO] = 34103. / 18144.
 					+ params->eta * 13661. / 2016. + etaPow2 * 59. / 18.;
-			params->coeff.SS_Omega_C = 0.;
+			params->coeff.SSself_Omega_C = 0.;
 			params->coeff.QM_Omega_C = 0.;
-			for (i = 0; i < 2; i++) {
-#ifdef _SS_
-				params->coeff.SS_Omega[i] = -spin_MPow2[i] * params->chi_Amp[i]
-						/ 96.;
-				params->coeff.SS_Omega_C -= 7. * params->coeff.SS_Omega[i];
-#endif
-#ifdef _QM_
-				params->coeff.QM_Omega[i] = spin_MPow2[i] * params->chi_Amp[i]
-						* params->flatness[i] * 7.5;
-				params->coeff.QM_Omega_C -= params->coeff.QM_Omega[i] / 3.;
-				params->coeff.QM_Chih[i] = -params->flatness[i] * params->eta
-						* params->chi_Amp[i] * 3. / 2.;
+			if ((params->spin_Component & SS_Comp) == SS_Comp) {
+				params->coeff.SS_Chih[0] = spin_MPow2[1] / 2.;
+				params->coeff.SS_Chih[1] = spin_MPow2[0] / 2.;
+#if RENORM==0
+				params->coeff.SS_Omega[0] = 721. * params->eta
+						* params->chi_Amp[0] * params->chi_Amp[1] / 48.;
+				params->coeff.SS_Omega[1] = -247. * params->coeff.SS_Omega[0]
+						/ 721.;
+				params->coeff.SS_MECO = -spin_MPow2[0] * spin_MPow2[1];
+#else
+				params->coeff.SS_Omega[0] = 79. * params->eta * params->chi_Amp[0] * params->chi_Amp[1] / 8.;
+				params->coeff.SS_MECO = 2. * spin_MPow2[0] * spin_MPow2[1];
 #endif
 			}
-#ifdef _S1S2_
-			params->coeff.S1S2_Chih[0] = spin_MPow2[1] / 2.;
-			params->coeff.S1S2_Chih[1] = spin_MPow2[0] / 2.;
-#if RENORM==0
-			params->coeff.S1S2_Omega[0] = 721. * params->eta
-					* params->chi_Amp[0] * params->chi_Amp[1] / 48.;
-			params->coeff.S1S2_Omega[1] = -247. * params->coeff.S1S2_Omega[0]
-					/ 721.;
-			params->coeff.S1S2_MECO = -spin_MPow2[0] * spin_MPow2[1];
-#else
-			params->coeff.S1S2_Omega[0] = 79. * params->eta * params->chi_Amp[0] * params->chi_Amp[1] / 8.;
-			params->coeff.S1S2_MECO = 2. * spin_MPow2[0] * spin_MPow2[1];
-#endif
-#endif
+			if ((params->spin_Component & SSself_Comp) == SSself_Comp) {
+				for (i = 0; i < 2; i++) {
+					params->coeff.SSself_Omega[i] = -spin_MPow2[i] * params->chi_Amp[i]
+							/ 96.;
+					params->coeff.SSself_Omega_C -= 7. * params->coeff.SSself_Omega[i];
+				}
+			}
+			if ((params->spin_Component & QM_Comp) == QM_Comp) {
+				for (i = 0; i < 2; i++) {
+					params->coeff.QM_Omega[i] = spin_MPow2[i] * params->chi_Amp[i]
+							* params->flatness[i] * 7.5;
+					params->coeff.QM_Omega_C -= params->coeff.QM_Omega[i] / 3.;
+					params->coeff.QM_Chih[i] = -params->flatness[i] * params->eta
+							* params->chi_Amp[i] * 3. / 2.;
+				}
+				params->coeff.QM_MECO = 2. * params->eta;
+			}
 			params->coeff.MECO[LAL_PNORDER_TWO] *= (-81. + 57. * params->eta
 					- etaPow2) / 24.;
-#ifdef _QM_
-			params->coeff.QM_MECO = 2. * params->eta;
-#endif
 		case LAL_PNORDER_ONE_POINT_FIVE:
 			params->coeff.domega[LAL_PNORDER_ONE_POINT_FIVE] = 4. * LAL_PI;
-			for (i = 0; i < 2; i++) {
-				params->coeff.SO_Chih[i] = (4. + 3. * m_m[i]) * params->eta
-						/ 2.;
-				params->coeff.dLNh[i] = -spin_MPow2[i] / params->eta;
-				params->coeff.SO_Omega[i] = -spin_MPow2[i] * (113. + 75.
-						* m_m[i]) / 12.;
-				params->coeff.SO_MECO[i] = -spin_MPow2[i] * 5. * params->eta
-						* (4. + 3. * m_m[i]) / 9.;
+			if (params->spin_Component != 0) {
+				for (i = 0; i < 2; i++) {
+					params->coeff.SO_Chih[i] = (4. + 3. * m_m[i]) * params->eta
+							/ 2.;
+					params->coeff.dLNh[i] = -spin_MPow2[i] / params->eta;
+					params->coeff.SO_Omega[i] = -spin_MPow2[i] * (113. + 75.
+							* m_m[i]) / 12.;
+					params->coeff.SO_MECO[i] = -spin_MPow2[i] * 5. * params->eta
+							* (4. + 3. * m_m[i]) / 9.;
+				}
 			}
 		case LAL_PNORDER_ONE:
 			params->coeff.domega[LAL_PNORDER_ONE]
@@ -123,12 +150,11 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params) {
 		default:
 			break;
 	}
-	DETATCHSTATUSPTR(status);
 	RETURN(status);
 }
 
-int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
-	waveform_Params *params = param;
+int LALSTPNQM_Derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
+	LALSTPNQM_Waveform_Params *params = param;
 
 	// variable declaration and initialization
 	const REAL8 *chi_p[2] = { values + CHIH1_1, values + CHIH2_1 };
@@ -140,8 +166,8 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	for (i = 2; i < 8; i++) {
 		omegaPowi_3[i] = omegaPowi_3[i - 1] * omegaPowi_3[1];
 	}
-	static REAL8 S1S2_Omega, SS_Omega, QM_Omega;
-	S1S2_Omega = SS_Omega = QM_Omega = 0.;
+	static REAL8 SS_Omega, SSself_Omega, QM_Omega;
+	SS_Omega = SSself_Omega = QM_Omega = 0.;
 	static REAL8 chih1chih2, chih1xchih2[2][3], LNhchih[2], LNhxchih[2][3];
 	chih1chih2 = SCALAR_PRODUCT3(chi_p[0], chi_p[1]);
 	for (i = 0; i < 2; i++) {
@@ -149,7 +175,6 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	}
 
 	// calculating domega and MECO without the spin components
-	// 0.5pn-es rész sem kell!!
 	for (i = params->order; i >= LAL_PNORDER_NEWTONIAN; i--) {
 		dvalues[OMEGA] += params->coeff.domega[i] * omegaPowi_3[i];
 	}
@@ -168,75 +193,79 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 					* omegaPowi_3[LAL_PNORDER_THREE];
 		case LAL_PNORDER_TWO_POINT_FIVE:
 		case LAL_PNORDER_TWO:
-#ifdef _S1S2_
+			if ((params->spin_Component & SS_Comp) == SS_Comp) {
 #if RENORM==0
-			// S1S2 for domega
-			S1S2_Omega = params->coeff.S1S2_Omega[0] * LNhchih[0] * LNhchih[1]
-					+ params->coeff.S1S2_Omega[1] * chih1chih2;
-			// S1S2 for MECO
-			dvalues[MECO] += params->coeff.S1S2_MECO * (chih1chih2 - 3
-					* LNhchih[0] * LNhchih[1]) * omegaPowi_3[3];
+				// S1S2 for domega
+				SS_Omega = params->coeff.SS_Omega[0] * LNhchih[0] * LNhchih[1]
+						+ params->coeff.SS_Omega[1] * chih1chih2;
+				// S1S2 for MECO
+				dvalues[MECO] += params->coeff.SS_MECO * (chih1chih2 - 3
+						* LNhchih[0] * LNhchih[1]) * omegaPowi_3[3];
 #else
-			S1S2_Omega = params->coeff.S1S2_Omega[0] * LNhchih[0] * LNhchih[1];
-			dvalues[MECO] += params->coeff.S1S2_MECO * LNhchih[0] * LNhchih[1] * omegaPowi_3[3];
-#endif
-#endif
-#ifdef _SS_
-			// SS for domega
-			SS_Omega = params->coeff.SS_Omega_C;
-#endif
-#ifdef _QM_
-			// QM for domega
-			QM_Omega = params->coeff.QM_Omega_C;
-#endif
-			for (i = 0; i < 2; i++) {
-				k = (i + 1) % 2; // the opposite index
-				// the 3*index is used, to acces the first spin, if index=0,
-				// otherwise the second spin
-#ifdef _S1S2_
-				//S1S2 for dchih
-				VECTOR_PRODUCT3W(chi_p[k], chi_p[i], params->coeff.S1S2_Chih[i], chih1xchih2[i]);
-				VECTOR_PRODUCT3(values + LNH_1, chi_p[i], LNhxchih[i]);
-				for (j = 0; j < 3; j++) {
-					dvalues[CHIH1_1 + 3 * i + j] += (chih1xchih2[i][j] - 3.
-							* params->coeff.S1S2_Chih[i] * LNhchih[k]
-							* LNhxchih[i][j]) * omegaPowi_3[6];
+				SS_Omega = params->coeff.SS_Omega[0] * LNhchih[0] * LNhchih[1];
+				dvalues[MECO] += params->coeff.SS_MECO * LNhchih[0] * LNhchih[1] * omegaPowi_3[3];
+#endif			
+				for (i = 0; i < 2; i++) {
+					k = (i + 1) % 2; // the opposite index
+					// the 3*index is used, to acces the first spin, if index=0,
+					// otherwise the second spin
+					//S1S2 for dchih
+					VECTOR_PRODUCT3W(chi_p[k], chi_p[i], params->coeff.SS_Chih[i], chih1xchih2[i]);
+					VECTOR_PRODUCT3(values + LNH_1, chi_p[i], LNhxchih[i]);
+					for (j = 0; j < 3; j++) {
+						dvalues[CHIH1_1 + 3 * i + j] += (chih1xchih2[i][j] - 3.
+								* params->coeff.SS_Chih[i] * LNhchih[k]
+								* LNhxchih[i][j]) * omegaPowi_3[6];
+					}
 				}
-#endif
-#ifdef _SS_
-				// SS for domega
-				SS_Omega += params->coeff.SS_Omega[i] * SQR(LNhchih[i]);
-#endif
-#ifdef _QM_
-				// QM for domega
-				QM_Omega += params->coeff.QM_Omega[i] * LNhchih[i];
-				// QM for dchih
-				for (j = 0; j < 3; j++) {
-					dvalues[CHIH1_1 + 3 * i + j] += params->coeff.QM_Chih[i]
-							* LNhchih[i] * LNhxchih[i][j] * omegaPowi_3[6];
-				}
-#endif
 			}
-#ifdef _QM_
-			dvalues[MECO] += params->coeff.QM_MECO * QM_Omega * omegaPowi_3[3];
-#endif
-			dvalues[OMEGA] += (QM_Omega + SS_Omega + S1S2_Omega)
+			if ((params->spin_Component & SSself_Comp) == SSself_Comp) {
+				// SS for domega
+				SSself_Omega = params->coeff.SSself_Omega_C;
+				for (i = 0; i < 2; i++) {
+					k = (i + 1) % 2; // the opposite index
+					// the 3*index is used, to acces the first spin, if index=0,
+					// otherwise the second spin
+					// SS for domega
+					SSself_Omega += params->coeff.SSself_Omega[i] * SQR(LNhchih[i]);
+				}
+			}
+			if ((params->spin_Component & QM_Comp) == QM_Comp) {
+				// QM for domega
+				QM_Omega = params->coeff.QM_Omega_C;
+				for (i = 0; i < 2; i++) {
+					k = (i + 1) % 2; // the opposite index
+					// the 3*index is used, to acces the first spin, if index=0,
+					// otherwise the second spin
+					// QM for domega
+					QM_Omega += params->coeff.QM_Omega[i] * LNhchih[i];
+					// QM for dchih
+					for (j = 0; j < 3; j++) {
+						dvalues[CHIH1_1 + 3 * i + j] += params->coeff.QM_Chih[i]
+								* LNhchih[i] * LNhxchih[i][j] * omegaPowi_3[6];
+					}
+				}
+				dvalues[MECO] += params->coeff.QM_MECO * QM_Omega * omegaPowi_3[3];
+			}
+			dvalues[OMEGA] += (QM_Omega + SSself_Omega + SS_Omega)
 					* omegaPowi_3[LAL_PNORDER_TWO];
 		case LAL_PNORDER_ONE_POINT_FIVE:
-			for (i = 0; i < 2; i++) {
-				dvalues[OMEGA] += params ->coeff.SO_Omega[i] * LNhchih[i]
-						* omegaPowi_3[LAL_PNORDER_ONE_POINT_FIVE];
-				dvalues[MECO] += params->coeff.SO_MECO[i] * LNhchih[i]
-						* omegaPowi_3[2];
-			}
-			for (i = 0; i < 3; i++) {
-				dvalues[CHIH1_1 + i] += params->coeff.SO_Chih[0]
-						* LNhxchih[0][i] * omegaPowi_3[5];
-				dvalues[CHIH2_1 + i] += params->coeff.SO_Chih[1]
-						* LNhxchih[1][i] * omegaPowi_3[5];
-				dvalues[LNH_1 + i] += (params->coeff.dLNh[0] * dvalues[CHIH1_1
-						+ i] + params->coeff.dLNh[1] * dvalues[CHIH2_1 + i])
-						* omegaPowi_3[1];
+			if (params->spin_Component != 0) {
+				for (i = 0; i < 2; i++) {
+					dvalues[OMEGA] += params ->coeff.SO_Omega[i] * LNhchih[i]
+							* omegaPowi_3[LAL_PNORDER_ONE_POINT_FIVE];
+					dvalues[MECO] += params->coeff.SO_MECO[i] * LNhchih[i]
+							* omegaPowi_3[2];
+				}
+				for (i = 0; i < 3; i++) {
+					dvalues[CHIH1_1 + i] += params->coeff.SO_Chih[0]
+							* LNhxchih[0][i] * omegaPowi_3[5];
+					dvalues[CHIH2_1 + i] += params->coeff.SO_Chih[1]
+							* LNhxchih[1][i] * omegaPowi_3[5];
+					dvalues[LNH_1 + i] += (params->coeff.dLNh[0] * dvalues[CHIH1_1
+							+ i] + params->coeff.dLNh[1] * dvalues[CHIH2_1 + i])
+							* omegaPowi_3[1];
+				}
 			}
 		case LAL_PNORDER_ONE:
 		case LAL_PNORDER_HALF:
@@ -252,8 +281,8 @@ int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * param) {
 	return GSL_SUCCESS;
 }
 
-void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform) {
-	INITSTATUS(status, "generator", WAVEFORMC);
+void LALSTPNQM_Generator(LALStatus *status, LALSTPNQM_Waveform_Params *params, CoherentGW *waveform) {
+	INITSTATUS(status, "LALSTPNQM_Generator", WAVEFORMC);
 	ATTATCHSTATUSPTR(status);
 
 	// variable declaration and initialization
@@ -265,11 +294,10 @@ void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform)
 	const REAL8 freq_Step = geometrized_m_total * LAL_PI;
 	const REAL8 step = params->sampling_Time / geometrized_m_total;
 	REAL8 values[NUM_OF_VAR], dvalues[NUM_OF_VAR]; // + 1 for MECO
-	integrator_System integrator;
+	LALSTPNQM_Integrator_System integrator;
 	ERR_STR_END("runge_kutta_init");
-	integrator_init(status->statusPtr, NUM_OF_VAR - 1, params, derivator,
-			&integrator);
-	CHECKSTATUSPTR(status);
+	TRY(LALSTPNQM_Integrator_Init(status->statusPtr, NUM_OF_VAR - 1, params, LALSTPNQM_Derivator,
+			&integrator), status);
 
 	// initializing the dynamic variables
 	values[PHASE] = params->phi;
@@ -282,10 +310,9 @@ void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform)
 		values[CHIH2_1 + i] = params->chih[1][i];
 	}
 
-	// filling the coefficients
-	fill_Coefficients(status->statusPtr, params);
-	CHECKSTATUSPTR(status);
-	derivator(time, values, dvalues, params);
+	// filling the LALSTPNQM_Coefficients
+	TRY(LALSTPNQM_Fill_Coefficients(status->statusPtr, params), status);
+	LALSTPNQM_Derivator(time, values, dvalues, params);
 	dvalues[MECO] = -1.; // to be able to start the loop
 	i = 0;
 	ERR_STR_END("while start")
@@ -317,8 +344,7 @@ void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform)
 
 		// evolving
 		time = i++ * params->sampling_Time;
-		integrator_Func(status->statusPtr, &integrator, step, values);
-		CHECKSTATUSPTR(status);
+		TRY(LALSTPNQM_Integrator_Func(status->statusPtr, &integrator, step, values), status);
 
 		// if one of the variables is nan, the PN approximation braked down
 		if (isnan(values[PHASE]) || isnan(values[OMEGA])
@@ -330,8 +356,9 @@ void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform)
 			ERR_STR_END("nan");
 			break;
 		}
-		derivator(time, values, dvalues, params);
+		LALSTPNQM_Derivator(time, values, dvalues, params);
 		if (i == waveform->f->data->length + 1) {
+			ERR_STR_END("break");
 			break;
 		}
 #if DEBUG==1
@@ -347,7 +374,7 @@ void generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform)
 	waveform->f->data->length = i;
 	ERR_D(i);
 	/// \bug there is double free or corruption if uncommented
-	//integrator_free(status->statusPtr, &integrator);
+	//LALSTPNQM_Integrator_Free(status->statusPtr, &integrator);
 	CHECKSTATUSPTR(status);
 	DETATCHSTATUSPTR(status);
 	RETURN(status);

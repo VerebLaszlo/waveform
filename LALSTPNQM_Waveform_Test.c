@@ -1,5 +1,5 @@
 /**
- * @file main.c
+ * @file LALSTPNQM_Waveform_Test.c
  *		The user interface.
  * @author László Veréb
  * @date 2010.05.21.
@@ -12,11 +12,14 @@
 #include <lal/GenerateInspiral.h>
 
 #include "util_debug.h"
-#include "waveform_interface.h"
+#include "LALSTPNQM_Waveform_Interface.h"
 
 NRCSID(MAINC, "$Id: main.c,v 0.1 2010/05/21");
 
+int lalDebugLevel = 0;
+
 extern REAL8 lapultsag[2]; ///< \bug be kell rakni a paraméterekbe
+extern LALSTPNQM_Choose_Spin_Component spin_Component;
 
 int main(int argc, char *argv[]) {
 
@@ -31,13 +34,19 @@ int main(int argc, char *argv[]) {
 	REAL8 dt;
 	char PNString[50];
 
-	if (argc != 18) {
+	if (argc == 20) {
+		lalDebugLevel = atoi(argv[19]);
+		printf("%d\n", lalDebugLevel);
+	} else if (argc == 19) {
+		spin_Component = atoi(argv[18]);
+	} else if (argc != 18) {
 		printf(
 				"                         1  2  3   4   5   6   7   8   9     10    11   12      13      14       15 16      17\n");
 		printf(
 				"Correct parameter order: m1 m2 S1x S1y S1z S2x S2y S2z flat1 flat2 incl f_lower f_final distance dt PNorder outputfile\n");
 		return (1);
 	}
+	spin_Component = SO_Comp | SS_Comp;
 
 	memset(&mystatus, 0, sizeof(LALStatus));
 	memset(&thewaveform, 0, sizeof(CoherentGW));
@@ -66,38 +75,19 @@ int main(int argc, char *argv[]) {
 	LALSnprintf(injParams.waveform, LIGOMETA_WAVEFORM_MAX * sizeof(CHAR),
 			PNString);
 
-	choose_CoherentGW_Component(&mystatus, 1, &thewaveform);
+	LALSTPNQM_Choose_CoherentGW_Component(&mystatus, 1, &thewaveform);
 
-	/*************************************************************************/
-	/******************** ez majd nem kell a végső kódban ********************/
-	InspiralTemplate inspiralParams; // structure for inspiral package
-
-	LALGetApproximantFromString(&mystatus, injParams.waveform,
-			&inspiralParams.approximant);
-
-	LALGetOrderFromString(&mystatus, injParams.waveform, &inspiralParams.order);
-
-	/* We fill ppnParams */
-	LALGenerateInspiralPopulatePPN(&mystatus, &ppnParams, &injParams);
-
-	/* we fill inspiralParams structure as well.*/
-	LALGenerateInspiralPopulateInspiral(&mystatus, &inspiralParams, &injParams,
-			&ppnParams);
-
-	ERR_STR_END("interface start");
-	/* the waveform generation itself */
-	interface(&mystatus, &thewaveform, &inspiralParams, &ppnParams);
-	ERR_STR_END("interface end");
-	/* we populate the simInspiral table with the fFinal needed for
-	 template normalisation. */
-	injParams.f_final = inspiralParams.fFinal;
-	/******************************** eddig extra *****************************/
-	/**************************************************************************/
-
-	if (mystatus.statusCode) {
-		fprintf(stderr, "LALSTPNWaveformTest: error generating waveform\n");
-		exit(1);
+	interface(&mystatus, &thewaveform, &injParams, &ppnParams);
+	if (mystatus.statusCode && (lalDebugLevel > 0)) {
+		fprintf(stderr, "Error[0] 1: program %s, file %s, line %i, %s\n"
+			"         Function interface() failed\n", argv[0], __FILE__,
+				__LINE__, MAINC);
 	}
+	/* Print result. *//*
+	if (mystatus.statusCode) {
+		fprintf(stderr, "LALSTPNQMWaveformTest: error generating waveform\n");
+		exit(1);
+	}*/
 	/* --- and finally save in a file --- */
 
 	outputfile = fopen(filename, "w");
@@ -111,6 +101,8 @@ int main(int argc, char *argv[]) {
 	}
 	//    fclose(outputfile);
 	ERR_STR_END("Done.");
-	return 0;
+	LALCheckMemoryLeaks();
+	REPORTSTATUS(&mystatus);
+	return mystatus.statusCode;
 }
 

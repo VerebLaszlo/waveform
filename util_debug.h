@@ -14,6 +14,7 @@
 /**		Writes the current file name and line number.
  */
 #define ERR_LINE					\
+if (DEBUG==1)						\
 fprintf(stderr, "%s %d\n", 			\
 		__FILE__, __LINE__);		\
 fflush(stderr);

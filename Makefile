@@ -11,53 +11,57 @@
 #	/etc/ld.so.conf fájlhoz, és hajtsd végra a ldconfig parancsot.			#
 #############################################################################
 
-SPIN=1		# 0 = SO, 1 = S1S2, 2 = SS, 4 = QM
-RENORM=0	# 0 = NOT RENORMALIZED, 1 = RENORMALIZED
-DEBUG=0		# 0 = non, 1 = yes
-OTHER=Makefile util_debug.h
-GCC=colorgcc -Wall -O3 -W -g3
-LIBS=-lm -lrt
+RENORM=0 # 0,1
+BUILD_TYPE=debug# debug, normal
+CFLAGS=#ddd
+ifeq (${BUILD_TYPE},debug)
+	CFLAGS=-Wall -W -g3
+	DEBUG=1
+else
+	CFLAGS=-O3
+	DEBUG=0
+endif
+
+CC=colorgcc -c
 GSL_LIB=-lgsl -lgslcblas
 LAL_INC=-I/opt/lscsoft/lal/include -I/opt/lscsoft/lalinspiral/include -I/opt/lscsoft/lalmetaio/include
 LAL_LIB=-L/opt/lscsoft/lal/lib/ -L/opt/lscsoft/lalinspiral/lib/ -llal -llalinspiral
+OBJ=LALSTPNQM_Waveform_Interface.o LALSTPNQM_Waveform.o LALSTPNQM_Integrator.o
 
 all: own lal
 
-lal : LALSTPNWaveformTestMod.c
-	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} -o lal LALSTPNWaveformTestMod.c
+lal: LALSTPNWaveformTestMod.c
+	colorgcc ${CFLAGS} ${LAL_INC} ${LAL_LIB} -o lal LALSTPNWaveformTestMod.c -lm
+	@echo ''
+ 
+own: LALSTPNQM_Waveform_Test.c ${OBJ}
+	colorgcc ${CFLAGS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} -o own LALSTPNQM_Waveform_Test.c ${OBJ}
 	@echo ''
 
-own : main.c waveform_interface.o waveform.o util_math.o integrator.o ${OTHER}
-	${GCC} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} -o own main.c waveform_interface.o waveform.o util_math.o integrator.o
+LALSTPNQM_Waveform_Interface.o: LALSTPNQM_Waveform_Interface.c LALSTPNQM_Waveform_Interface.h LALSTPNQM_Waveform.o
+	${CC} ${CFLAGS} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} LALSTPNQM_Waveform_Interface.c -lm
 	@echo ''
 
-waveform_interface.o : waveform_interface.c waveform_interface.h waveform.o integrator.o ${OTHER}
-	${GCC} -c ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} waveform_interface.c waveform.o integrator.o
+LALSTPNQM_Waveform.o: LALSTPNQM_Waveform.c LALSTPNQM_Waveform.h LALSTPNQM_Integrator.o
+	${CC} ${CFLAGS} ${LIBS} ${LAL_INC} ${LAL_LIB} ${GSL_LIB} -DDEBUG=${DEBUG} -DRENORM=${RENORM} LALSTPNQM_Waveform.c
 	@echo ''
 
-waveform.o : waveform.c waveform.h util_math.o integrator.o ${OTHER}
-	${GCC} -c ${LIBS} ${LAL_INC} ${LAL_LIB} ${GSL_LIB_F} -DDEBUG=${DEBUG} -DSPIN=${SPIN} -DRENORM=${RENORM} waveform.c util_math.o integrator.o
+LALSTPNQM_Integrator.o: LALSTPNQM_Integrator.c LALSTPNQM_Integrator.h
+	${CC} ${CFLAGS} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} LALSTPNQM_Integrator.c
 	@echo ''
 
-integrator.o : integrator.c integrator.h ${OTHER}
-	${GCC} -c ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} integrator.c
+clean:
+	rm -rf *.o *.out *.b
+	echo ${MAKE_VERSION}
 	@echo ''
 
-util_math.o : util_math.c util_math.h ${OTHER}
-	${GCC} -c ${LIBS} util_math.c
-	@echo ''
-
-clean_run:
+cleanrun:
 	rm -rf lal own
 	@echo ''
 
-clean_all :
-	make clean_run
+cleanall:
 	make clean
-	@echo ''
-
-clean :
-	rm -rf *.o *.out *.b
+	make cleanrun
 	@echo ''
 
 run :
@@ -76,4 +80,4 @@ help :
 	@echo 'help      : prints this message'
 	@echo ''
 
-.PHONY: all clean clean_all run help
+.PHONY: all clean cleanall cleanrun run help

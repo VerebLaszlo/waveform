@@ -1,12 +1,12 @@
 /**
- * @file waveform.h
- *		Containes the enums structs and functions declarations to create GWforms.
+ * @file LALSTPNQM_Waveform.h
+ *		Contains the enumerations, structures and functions declarations to create GWforms.
  * @author László Veréb
  * @date 2010.05.21.
  */
 
-#ifndef WAVEFORM_H
-#define WAVEFORM_H
+#ifndef LALSTPNQM_WAVEFORM_H
+#define LALSTPNQM_WAVEFORM_H
 
 #include <math.h>
 
@@ -14,37 +14,49 @@
 #include <lal/LALInspiral.h>
 #include <lal/Units.h>
 
-#include "util_math.h"
 #include "util_debug.h"
 
-NRCSID (WAVEFORMH, "$Id$");
+NRCSID (WAVEFORMH, "$Id$ LALSTPNQM_Waveform.h");
+
+/**		Enumeration to specify which component will be used in the waveform
+ * generation. Their combination also can be used by the bitwise or.
+ **/
+typedef enum {
+	SO_Comp = 1, ///< Spin-orbit component
+	SS_Comp = 2, ///< Spin-spin component
+	SSself_Comp = 4, ///< Spin-spin-self component
+	QM_Comp = 8, ///< quadropole-monopole component
+	Error_Comp = 16, ///< for error reporting
+	LALSTPN_Comp = 3
+///< combined: spin-orbit and spin-spin component together, like the LALSTPNWaveform
+} LALSTPNQM_Choose_Spin_Component;
 
 /**		The structure contains the coefficients for calculating the derivatives
  * of the evolving quantities.
  */
-typedef struct coefficients_Tag {
+typedef struct {
 	REAL8 domega_Global; ///< global coefficient for domega
 	REAL8 domega[LAL_PNORDER_PSEUDO_FOUR]; ///< coefficients for domega for every PN order
 	REAL8 SO_Omega[2]; ///< the spin-orbit coefficients for domega
-	REAL8 S1S2_Omega[2]; ///< the spin1-spin2 coefficients for domega
-	REAL8 SS_Omega[2]; ///< the spin-selft coefficients for domega
-	REAL8 SS_Omega_C; ///< the constant spin-selft coefficients for domega
+	REAL8 SS_Omega[2]; ///< the spin1-spin2 coefficients for domega
+	REAL8 SSself_Omega[2]; ///< the spin-selft coefficients for domega
+	REAL8 SSself_Omega_C; ///< the constant spin-selft coefficients for domega
 	REAL8 QM_Omega[2]; ///< the quadropole-monopole coefficients for domega
 	REAL8 QM_Omega_C; ///< the constant quadropole-monopole coefficients for domega
 	REAL8 SO_Chih[2]; ///< the spin-orbit coefficients for dchih
-	REAL8 S1S2_Chih[2]; ///< the spin1-spin2 coefficientd for dchih
+	REAL8 SS_Chih[2]; ///< the spin1-spin2 coefficientd for dchih
 	REAL8 QM_Chih[2]; ///< the quadropole-monopole coefficients for dchih
 	REAL8 dLNh[2]; ///< coefficients for dLNh
 	REAL8 MECO[8]; ///< coefficients for MECO-test
 	REAL8 SO_MECO[2]; ///< spin-orbit coefficients for MECO
-	REAL8 S1S2_MECO; ///< spin1-spin2 coefficients for MECO
+	REAL8 SS_MECO; ///< spin1-spin2 coefficients for MECO
 	REAL8 QM_MECO; ///< quadropole-monopole coefficients for MECO
 	REAL8 ln_coeff; ///< coefficient for the ln component in domega
-} coefficients;
+} LALSTPNQM_Coefficients;
 
 /**		The structure contains the system's and the generator's parameters.
  */
-typedef struct waveform_Params_Tag {
+typedef struct {
 	//@{@name mass-parameters
 	REAL8 mass[2]; ///< masses of the BHs in \f$M_\odot\f$
 	REAL8 total_Mass; ///< total mass in \f$M_\odot\f$
@@ -69,18 +81,20 @@ typedef struct waveform_Params_Tag {
 	REAL8 sampling_Freq; ///< sampling frequency in \f$Hz\f$
 	REAL8 sampling_Time; ///< sampling time in \f$s\f$
 	LALPNOrder order; ///< the Post_Newtonian order of the GW generation
-	coefficients coeff; ///< coefficients for the deriving the parameters	//@}
-} waveform_Params;
+	LALSTPNQM_Choose_Spin_Component spin_Component; ///< which spin components will be included in the generation
+	LALSTPNQM_Coefficients coeff; ///< coefficients for the deriving the parameters	//@}
+} LALSTPNQM_Waveform_Params;
 
-/**		The function fills the coefficients structure with the needed
- *	coefficients for generating the waveform up to the given PN-order.
+/**		The function fills the LALSTPNQM_Coefficients structure with the needed
+ *	LALSTPNQM_Coefficients for generating the waveform up to the given PN-order.
  *
  *	The orders above 2PN are incomplete, so use them if you want to try their
  *	effects.
  * @param[in,out]	status	: LAL universal status structure
- * @param[in,out]	params	: the generator's parameters
+ * @param[in,out]	params	: the LALSTPNQM_Generator's parameters
  */
-void fill_Coefficients(LALStatus *status, waveform_Params * const params);
+void LALSTPNQM_Fill_Coefficients(LALStatus *status,
+		LALSTPNQM_Waveform_Params * const params);
 
 /**		The function calculates the derived values.
  * The formulas are:
@@ -140,7 +154,7 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params);
  *			QM_{MECO}=2\eta QM_{\omega}
  *		\end{array}
  *	\f}
- *	The constant parts are calculated by the fill_Coefficients() function and
+ *	The constant parts are calculated by the LALSTPNQM_Fill_Coefficients() function and
  *	then used in this function applying the dynamic parts: the products of the
  *	vectors and the powers of the \f$M\omega\f$.
  *
@@ -149,45 +163,27 @@ void fill_Coefficients(LALStatus *status, waveform_Params * const params);
  * @param[in]	t		: evolution time, not in used
  * @param[in]	values	: the values to be derivated
  * @param[out]	dvalues	: the derivated values and the last element is the MECO
- * @param[in]	params	: the generator's parameters
+ * @param[in]	params	: the LALSTPNQM_Generator's parameters
  */
-int derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * params);
-/**		Enumeration to index the dynamic variables in the generator function.
+int LALSTPNQM_Derivator(REAL8 t, const REAL8 values[], REAL8 dvalues[],
+		void * params);
+/**		Enumeration to index the dynamic variables in the LALSTPNQM_Generator function.
  */
 typedef enum {
-	PHASE,
-	OMEGA,
-	LNH_1,
-	LNH_2,
-	LNH_3,
-	CHIH1_1,
-	CHIH1_2,
-	CHIH1_3,
-	CHIH2_1,
-	CHIH2_2,
-	CHIH2_3,
-	MECO,
-	NUM_OF_VAR
-} generator_variables;
-
-/**		The structure's contents are the frequency in the freq->data array and
- *	one of the following:
- *	1. the \f$h_+\f$ components in the odd numbered h->data->data member and
- *	\f$h_\times\f$ componets in the even numbered h->data->data member.
- *	2. the \f$a_+\f$ amplitude components in the odd numbered a->data->data members and
- *	\f$a_\times\f$ amplitude componets in the even numbered a->data->data
- *	members. And also the phase function in the phase->data, and the
- *	polarization shift in pol->data members.
- *	3. simultaneously the 1. and 2. options.
- */
-typedef struct waveform_Tag {
-	size_t length; ///< the length of the vectors, but half the length of the h and a vectors
-	REAL4TimeVectorSeries *h; ///< the wave components
-	REAL4TimeVectorSeries *a; ///< the amplitude components
-	REAL8Vector *phase; ///< the phase function
-	REAL4Vector *pol; ///< the polarization shift
-	REAL4Vector *freq; ///< the frequency
-} waveform;
+	PHASE,	///< index of the phase
+	OMEGA,	///< index of the \f$M\omega\f$
+	LNH_1,	///< index of the \f$\hat{L}_N\f$'s x component
+	LNH_2,	///< index of the \f$\hat{L}_N\f$'s y component
+	LNH_3,	///< index of the \f$\hat{L}_N\f$'s z component
+	CHIH1_1,	///< index of the \f$\hat{\chi}_1\f$'s x component
+	CHIH1_2,	///< index of the \f$\hat{\chi}_1\f$'s y component
+	CHIH1_3,	///< index of the \f$\hat{\chi}_1\f$'s z component
+	CHIH2_1,	///< index of the \f$\hat{\chi}_2\f$'s x component
+	CHIH2_2,	///< index of the \f$\hat{\chi}_2\f$'s y component
+	CHIH2_3,	///< index of the \f$\hat{\chi}_2\f$'s z component
+	MECO,	///< index of the MECO
+	NUM_OF_VAR	///< number of the dynamic variables
+} LALSTPNQM_Generator_Variables;
 
 /**		The function generates the waveform.
  * @param[in,out]	status		: LAL universal status structure
@@ -195,6 +191,7 @@ typedef struct waveform_Tag {
  * @param[out]		waveform	: the generated waveform
  */
 void
-generator(LALStatus *status, waveform_Params *params, CoherentGW *waveform);
+LALSTPNQM_Generator(LALStatus *status, LALSTPNQM_Waveform_Params *params,
+		CoherentGW *waveform);
 
-#endif /* WAVEFORM_H */
+#endif /* LALSTPNQM_WAVEFORM_H */
