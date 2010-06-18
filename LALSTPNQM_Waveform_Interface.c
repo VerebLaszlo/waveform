@@ -221,7 +221,7 @@ void LALSTPNQM_Choose_CoherentGW_Component(LALStatus *status, INT2 mode, Coheren
 			}
 			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 		}
-		//memset(wave->a, 0, sizeof(REAL4TimeVectorSeries));
+		memset(wave->a, 0, sizeof(REAL4TimeVectorSeries));
 		if ((wave->phi = (REAL8TimeSeries *) LALMalloc(
 				sizeof(REAL8TimeSeries))) == NULL) {
 			LALFree(wave->a);
@@ -234,7 +234,7 @@ void LALSTPNQM_Choose_CoherentGW_Component(LALStatus *status, INT2 mode, Coheren
 			}
 			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 		}
-		//memset(wave->phi, 0, sizeof(REAL4TimeSeries));
+		memset(wave->phi, 0, sizeof(REAL4TimeSeries));
 		if ((wave->shift = (REAL4TimeSeries *) LALMalloc(
 				sizeof(REAL4TimeSeries))) == NULL) {
 			LALFree(wave->a);
@@ -249,9 +249,30 @@ void LALSTPNQM_Choose_CoherentGW_Component(LALStatus *status, INT2 mode, Coheren
 			}
 			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 		}
-		//memset(wave->shift, 0, sizeof(REAL4TimeSeries));
+		memset(wave->shift, 0, sizeof(REAL4TimeSeries));
 	}
 
+	DETATCHSTATUSPTR(status);
+	RETURN(status);
+}
+
+void LALSTPNQM_Destroy_CoherentGW(LALStatus *status, CoherentGW *wave) {
+	INITSTATUS(status, "LALSTPNQM_Destroy_CoherentGW", LALSTPNQM_WAVEFORM_INTERFACEC);
+	ATTATCHSTATUSPTR(status);
+	TRY(LALSDestroyVector(status->statusPtr, &(wave->f->data)), status);
+	LALFree(wave->f);
+	if(wave->a != NULL) {
+		TRY(LALSDestroyVectorSequence(status->statusPtr, &(wave->a->data)), status);
+		LALFree(wave->a);
+		TRY(LALSDestroyVector(status->statusPtr, &(wave->shift->data)), status);
+		LALFree(wave->shift);
+		TRY(LALDDestroyVector(status->statusPtr, &(wave->phi->data)), status);
+		LALFree(wave->phi);
+	}
+	if (wave->h != NULL) {
+		TRY(LALSDestroyVectorSequence(status->statusPtr, &(wave->h->data)), status);
+		LALFree(wave->h);
+	}
 	DETATCHSTATUSPTR(status);
 	RETURN(status);
 }

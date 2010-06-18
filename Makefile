@@ -12,14 +12,19 @@
 #############################################################################
 
 RENORM=0 # 0,1
-BUILD_TYPE=debug# debug, normal
+BUILD_TYPE=normal# debug, normal, prod
 CFLAGS=#ddd
 ifeq (${BUILD_TYPE},debug)
 	CFLAGS=-Wall -W -g3
 	DEBUG=1
 else
+ifeq (${BUILD_TYPE},prod)
 	CFLAGS=-O3
 	DEBUG=0
+else
+	CFLAGS=-Wall -W -g3
+	DEBUG=0
+endif
 endif
 
 CC=colorgcc -c
@@ -52,7 +57,6 @@ LALSTPNQM_Integrator.o: LALSTPNQM_Integrator.c LALSTPNQM_Integrator.h
 
 clean:
 	rm -rf *.o *.out *.b
-	echo ${MAKE_VERSION}
 	@echo ''
 
 cleanrun:

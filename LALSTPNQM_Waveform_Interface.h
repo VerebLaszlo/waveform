@@ -47,9 +47,11 @@ void LALSTPNQM_Fill_Params(LALStatus *status, InspiralTemplate *params,
  * @param[in]		length		: the length of the waveform
  * @param[out]		waveform	: pointer to the allocated waveform
  */
-void LALSTPNQM_Allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *waveform);
 
-/**		The function allocates time-series structures for the waveform.
+void LALSTPNQM_Destroy_CoherentGW(LALStatus *status, CoherentGW *wave);
+
+void LALSTPNQM_Allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *waveform);
+/**		The function allocates timeseries structures for the waveform.
  * @param[in,out]	status	: LAL universal status structure
  * @param[in]		mode	: if 1 allocates memory for the h+,hx; if 2 then for
  * the a+,ax; and if 3 then for both

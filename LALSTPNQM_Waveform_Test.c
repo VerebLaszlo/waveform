@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 	LALSnprintf(injParams.waveform, LIGOMETA_WAVEFORM_MAX * sizeof(CHAR),
 			PNString);
 
-	LALSTPNQM_Choose_CoherentGW_Component(&mystatus, 1, &thewaveform);
+	LALSTPNQM_Choose_CoherentGW_Component(&mystatus, 3, &thewaveform);
 
 	interface(&mystatus, &thewaveform, &injParams, &ppnParams);
 	if (mystatus.statusCode && (lalDebugLevel > 0)) {
@@ -99,10 +99,10 @@ int main(int argc, char *argv[]) {
 		fprintf(outputfile, "%e\t%e\t%e\n", i * dt, thewaveform.h->data->data[2
 				* i], thewaveform.h->data->data[2 * i + 1]);
 	}
+	LALSTPNQM_Destroy_CoherentGW(&mystatus, &thewaveform);
 	//    fclose(outputfile);
 	ERR_STR_END("Done.");
 	LALCheckMemoryLeaks();
-	REPORTSTATUS(&mystatus);
 	return mystatus.statusCode;
 }
 
