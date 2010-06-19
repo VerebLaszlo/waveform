@@ -31,7 +31,7 @@ CC=colorgcc -c
 GSL_LIB=-lgsl -lgslcblas
 LAL_INC=-I/opt/lscsoft/lal/include -I/opt/lscsoft/lalinspiral/include -I/opt/lscsoft/lalmetaio/include
 LAL_LIB=-L/opt/lscsoft/lal/lib/ -L/opt/lscsoft/lalinspiral/lib/ -llal -llalinspiral
-OBJ=LALSTPNQM_Waveform_Interface.o LALSTPNQM_Waveform.o LALSTPNQM_Integrator.o
+OBJ=LALSQTPNWaveformInterface.o LALSQTPNWaveform.o LALSQTPNIntegrator.o
 
 all: own lal
 
@@ -39,20 +39,20 @@ lal: LALSTPNWaveformTestMod.c
 	colorgcc ${CFLAGS} ${LAL_INC} ${LAL_LIB} -o lal LALSTPNWaveformTestMod.c -lm
 	@echo ''
  
-own: LALSTPNQM_Waveform_Test.c ${OBJ}
-	colorgcc ${CFLAGS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} -o own LALSTPNQM_Waveform_Test.c ${OBJ}
+own: LALSQTPNWaveformTest.c ${OBJ}
+	colorgcc ${CFLAGS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} -o own LALSQTPNWaveformTest.c ${OBJ}
 	@echo ''
 
-LALSTPNQM_Waveform_Interface.o: LALSTPNQM_Waveform_Interface.c LALSTPNQM_Waveform_Interface.h LALSTPNQM_Waveform.o
-	${CC} ${CFLAGS} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} LALSTPNQM_Waveform_Interface.c -lm
+LALSQTPNWaveformInterface.o: LALSQTPNWaveformInterface.c LALSQTPNWaveformInterface.h LALSQTPNWaveform.o
+	${CC} ${CFLAGS} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} LALSQTPNWaveformInterface.c -lm
 	@echo ''
 
-LALSTPNQM_Waveform.o: LALSTPNQM_Waveform.c LALSTPNQM_Waveform.h LALSTPNQM_Integrator.o
-	${CC} ${CFLAGS} ${LIBS} ${LAL_INC} ${LAL_LIB} ${GSL_LIB} -DDEBUG=${DEBUG} -DRENORM=${RENORM} LALSTPNQM_Waveform.c
+LALSQTPNWaveform.o: LALSQTPNWaveform.c LALSQTPNWaveform.h LALSQTPNIntegrator.o
+	${CC} ${CFLAGS} ${LIBS} ${LAL_INC} ${LAL_LIB} ${GSL_LIB} -DDEBUG=${DEBUG} -DRENORM=${RENORM} LALSQTPNWaveform.c
 	@echo ''
 
-LALSTPNQM_Integrator.o: LALSTPNQM_Integrator.c LALSTPNQM_Integrator.h
-	${CC} ${CFLAGS} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} LALSTPNQM_Integrator.c
+LALSQTPNIntegrator.o: LALSQTPNIntegrator.c LALSQTPNIntegrator.h
+	${CC} ${CFLAGS} ${LIBS} ${LAL_INC} ${LAL_LIB} -DDEBUG=${DEBUG} LALSQTPNIntegrator.c
 	@echo ''
 
 clean:
@@ -78,8 +78,8 @@ help :
 	@echo 'lal       : makes just the LALSTPNWaveform.c part'
 	@echo 'own       : makes the whole own code'
 	@echo 'clean     : deletes the object files'
-	@echo 'clean_run : deletes the exe files'
-	@echo 'clean_all : invokes the "clean" and "clean_run" commands'
+	@echo 'cleanrun : deletes the exe files'
+	@echo 'cleanall : invokes the "clean" and "cleanrun" commands'
 	@echo 'run       : runs the two programs'
 	@echo 'help      : prints this message'
 	@echo ''

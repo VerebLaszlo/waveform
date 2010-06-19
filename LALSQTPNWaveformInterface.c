@@ -1,27 +1,27 @@
 /**
- * @file LALSTPNQM_Waveform_Interface.c
+ * @file LALSQTPNWaveformInterface.c
  *		Contains the interfaces to the user and to the other part of the code.
  * @author László Veréb
  * @date 2010.05.21.
  */
 
-#include "LALSTPNQM_Waveform_Interface.h"
-#include "LALSTPNQM_Waveform.h"
+#include "LALSQTPNWaveformInterface.h"
+#include "LALSQTPNWaveform.h"
 
 REAL8 lapultsag[2]; ///< \bug át kell rakni a paraméterekhez
-LALSTPNQM_Choose_Spin_Component spin_Component;///< \bug át kell rakni a paraméterekhez
+LALSQTPNChooseSpinComponent spin_Component;///< \bug át kell rakni a paraméterekhez
 
-NRCSID (LALSTPNQM_WAVEFORM_INTERFACEC, "$Id LALSTPNQM_Waveform_Interface.c$");
+NRCSID (LALSQTPNWAVEFORMINTERFACEC, "$Id LALSQTPNWaveformInterface.c$");
 
 /**		The macro function returns the square of the argument.
- * \warn Do not use with incrementing or decrementing operators!
+ * Do not use with incrementing or decrementing operators!
  * @param[in] a	 : the number
  * @return the square of the number
  */
 #define SQR(a) ((a)*(a))
 
 void interface(LALStatus *status, CoherentGW * thewaveform, SimInspiralTable *injParams, PPNParamStruc *ppnParams) {
-	INITSTATUS(status, "interface", LALSTPNQM_WAVEFORM_INTERFACEC);
+	INITSTATUS(status, "interface", LALSQTPNWAVEFORMINTERFACEC);
 	ATTATCHSTATUSPTR(status);
 	ASSERT(injParams, status, GENERATEINSPIRALH_ENULL, GENERATEINSPIRALH_MSGENULL);
 	InspiralTemplate inspiralParams; // structure for inspiral package
@@ -33,7 +33,7 @@ void interface(LALStatus *status, CoherentGW * thewaveform, SimInspiralTable *in
 	/* we fill inspiralParams structure as well.*/
 	TRY(LALGenerateInspiralPopulateInspiral(status->statusPtr, &inspiralParams, injParams, ppnParams), status);
 	/* the waveform generation itself */
-	TRY(LALSTPNQM_Interface(status->statusPtr, thewaveform, &inspiralParams, ppnParams), status);
+	TRY(LALSQTPNWaveformForInjection(status->statusPtr, thewaveform, &inspiralParams, ppnParams), status);
 	/* we populate the simInspiral table with the fFinal needed for
 	 template normalisation. */
 	injParams->f_final = inspiralParams.fFinal;/* If no waveform has been generated. (AmpCorPPN fills waveform.h) */
@@ -91,7 +91,7 @@ void interface(LALStatus *status, CoherentGW * thewaveform, SimInspiralTable *in
 	RETURN(status);
 }
 
-void LALSTPNQM_Interface(LALStatus *status, CoherentGW *waveform,
+void LALSQTPNWaveformForInjection(LALStatus *status, CoherentGW *waveform,
 		InspiralTemplate *params, PPNParamStruc *ppnParams) {
 
 	// variable declaration and initialization
@@ -99,9 +99,10 @@ void LALSTPNQM_Interface(LALStatus *status, CoherentGW *waveform,
 	REAL8 phiC; // phase at coalescence
 	InspiralInit paramsInit;
 
-	INITSTATUS(status, "LALSTPNQM_Interface", LALSTPNQM_WAVEFORM_INTERFACEC);
+	INITSTATUS(status, "LALSQTPNInterface", LALSQTPNWAVEFORMINTERFACEC);
 	ATTATCHSTATUSPTR(status);
 	ASSERT(params, status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
+	ASSERT(waveform != NULL, status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
 	// Compute some parameters
 	TRY(LALInspiralInit(status->statusPtr, params, &paramsInit), status);
 	if (paramsInit.nbins == 0) {
@@ -110,16 +111,22 @@ void LALSTPNQM_Interface(LALStatus *status, CoherentGW *waveform,
 	}
 
 	// Allocate the waveform structures.
-	LALSTPNQM_Allocate_CoherentGW(status->statusPtr, paramsInit.nbins, waveform);
-	CHECKSTATUSPTR(status);	///\bug eszt kiszedni, mert ha hiba van, fel kell szabadítani a memóriát!!!
-	LALSTPNQM_Waveform_Params wave_Params;
+	TRY(LALSQTPNAllocateCoherentGW(status->statusPtr, waveform, paramsInit.nbins), status);
+	LALSQTPNWaveformParams wave_Params;
 
 	// filling the parameters
-	TRY(LALSTPNQM_Fill_Params(status->statusPtr, params, ppnParams, &wave_Params), status);
+	LALSQTPNFillParams(status->statusPtr, &wave_Params, params, ppnParams);
+	if (status->statusCode) {
+		LALSQTPNDestroyCoherentGW(status->statusPtr, waveform);
+		ABORT(status, status->statusCode, status->statusDescription);
+	}
 
 	// calling the engine function
-	TRY(LALSTPNQM_Generator(status->statusPtr, &wave_Params, waveform), status);
-	ERR_STR_END("generator end");
+	LALSQTPNGenerator(status->statusPtr, waveform, &wave_Params);
+	if (status->statusCode) {
+		LALSQTPNDestroyCoherentGW(status->statusPtr, waveform);
+		ABORT(status, status->statusCode, status->statusDescription);
+	}
 	count = waveform->f->data->length;
 	/* Check an empty waveform hasn't been returned */
 	/*for (i = 0; i < waveform->f->data->length; i++) {
@@ -129,12 +136,13 @@ void LALSTPNQM_Interface(LALStatus *status, CoherentGW *waveform,
 
 	{
 		if (waveform->a != NULL) {
-			phiC = waveform->phi->data->data[waveform->f->data->length - 1];
+			/// \bug meg kell nézi, hogy ez miért nem kell!!!!
+			/*phiC = waveform->phi->data->data[waveform->f->data->length - 1];
 
 			for (i = 0; i < waveform->f->data->length; i++) {
 				waveform->phi->data->data[i] = -phiC
 						+ waveform->phi->data->data[i] + ppnParams->phi;
-			}
+			}*/
 			waveform->a->deltaT = waveform->f->deltaT = waveform->phi->deltaT
 					= waveform->shift->deltaT = 1. / params->tSampling;
 
@@ -154,7 +162,7 @@ void LALSTPNQM_Interface(LALStatus *status, CoherentGW *waveform,
 			snprintf(waveform->shift->name, LALNameLength,
 					"STPN inspiral polshift");
 		}
-		/* --- fill some output ---*/
+		// --- fill some output ---
 		ppnParams->tc = (REAL8) (count - 1) / params->tSampling;
 		ppnParams->length = count;
 		ppnParams->dfdt = ((REAL4) (waveform->f->data->data[count - 1]
@@ -169,8 +177,8 @@ void LALSTPNQM_Interface(LALStatus *status, CoherentGW *waveform,
 	RETURN(status);
 }
 
-void LALSTPNQM_Allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *wave) {
-	INITSTATUS(status, "LALSTPNQM_Allocate_CoherentGW", LALSTPNQM_WAVEFORM_INTERFACEC);
+void LALSQTPNAllocateCoherentGW(LALStatus *status, CoherentGW *wave, UINT4 length) {
+	INITSTATUS(status, "LALSQTPNAllocateCoherentGW", LALSQTPNWAVEFORMINTERFACEC);
 	ATTATCHSTATUSPTR(status);
 	CreateVectorSequenceIn in;
 	/* Make sure parameter and waveform structures exist. */
@@ -178,86 +186,117 @@ void LALSTPNQM_Allocate_CoherentGW(LALStatus *status, UINT4 length, CoherentGW *
 
 	in.length = length;
 	in.vectorLength = 2;
-	if (wave->h != NULL) {
-		TRY(LALSCreateVectorSequence(status->statusPtr, &(wave->h->data), &in), status);
-	}
-	if (wave->a != NULL) {
-		TRY(LALSCreateVectorSequence(status->statusPtr, &(wave->a->data), &in), status);
-		TRY(LALDCreateVector(status->statusPtr, &(wave->phi->data), in.length), status);
-		TRY(LALSCreateVector(status->statusPtr, &(wave->shift->data), in.length), status);
-	}
-	TRY(LALSCreateVector(status->statusPtr, &(wave->f->data), in.length), status);
-	DETATCHSTATUSPTR(status);
-	RETURN(status);
-}
 
-void LALSTPNQM_Choose_CoherentGW_Component(LALStatus *status, INT2 mode, CoherentGW *wave) {
-	INITSTATUS(status, "LALSTPNQM_Fill_Params", LALSTPNQM_WAVEFORM_INTERFACEC);
-	ATTATCHSTATUSPTR(status);
-
-	if ((wave->f = (REAL4TimeSeries *) LALMalloc(
-			sizeof(REAL4TimeSeries))) == NULL) {
-		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
-	}
-	memset(wave->f, 0, sizeof(REAL4TimeSeries));
-	if (mode == 1 || mode == 3) {
-		if ((wave->h
-				= (REAL4TimeVectorSeries *) LALMalloc(sizeof(REAL4TimeVectorSeries)))
-				== NULL) {
+	/*
+		if ((wave->h = (REAL4TimeVectorSeries *)
+				LALMalloc(sizeof(REAL4TimeVectorSeries))) == NULL) {
 			LALFree(wave->f);
 			wave->f = NULL;
 			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 		}
 		memset(wave->h, 0, sizeof(REAL4TimeVectorSeries));
+		LALSCreateVectorSequence(status->statusPtr, &(wave->h->data), &in);
+		if (wave->h->data == NULL) {
+			LALFree(wave->f);
+			wave->f = NULL;
+			LALFree(wave->h);
+			wave->h = NULL;
+			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+		}
+	*/
+	// allocating the frequency array
+	if ((wave->f = (REAL4TimeSeries *) LALMalloc(
+			sizeof(REAL4TimeSeries))) == NULL) {
+		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 	}
-	if (mode == 2 || mode == 3) {
-		if ((wave->a = (REAL4TimeVectorSeries *) LALMalloc(
-				sizeof(REAL4TimeVectorSeries))) == NULL) {
-			LALFree(wave->f);
-			wave->f = NULL;
-			if (mode == 1 || mode == 3) {
-				LALFree(wave->h);
-				wave->h = NULL;
-			}
-			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
-		}
-		memset(wave->a, 0, sizeof(REAL4TimeVectorSeries));
-		if ((wave->phi = (REAL8TimeSeries *) LALMalloc(
-				sizeof(REAL8TimeSeries))) == NULL) {
-			LALFree(wave->a);
-			wave->a = NULL;
-			LALFree(wave->f);
-			wave->f = NULL;
-			if (mode == 1 || mode == 3) {
-				LALFree(wave->h);
-				wave->h = NULL;
-			}
-			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
-		}
-		memset(wave->phi, 0, sizeof(REAL4TimeSeries));
-		if ((wave->shift = (REAL4TimeSeries *) LALMalloc(
-				sizeof(REAL4TimeSeries))) == NULL) {
-			LALFree(wave->a);
-			wave->a = NULL;
-			LALFree(wave->f);
-			wave->f = NULL;
-			LALFree(wave->phi);
-			wave->phi = NULL;
-			if (mode == 1 || mode == 3) {
-				LALFree(wave->h);
-				wave->h = NULL;
-			}
-			ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
-		}
-		memset(wave->shift, 0, sizeof(REAL4TimeSeries));
+	memset(wave->f, 0, sizeof(REAL4TimeSeries));
+	LALSCreateVector(status->statusPtr, &(wave->f->data), in.length);
+	if (wave->f->data == NULL) {
+		LALFree(wave->f);
+		wave->f = NULL;
+		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
 	}
 
+	// allocating the amplitude array
+	if ((wave->a = (REAL4TimeVectorSeries *)
+			LALMalloc(sizeof(REAL4TimeVectorSeries))) == NULL) {
+		TRY(LALSDestroyVector(status->statusPtr, &(wave->f->data)), status);
+		LALFree(wave->f);
+		wave->f = NULL;
+		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+	}
+	memset(wave->a, 0, sizeof(REAL4TimeVectorSeries));
+	LALSCreateVectorSequence(status->statusPtr, &(wave->a->data), &in);
+	if(wave->a->data == NULL) {
+		TRY(LALSDestroyVector(status->statusPtr, &(wave->f->data)), status);
+		LALFree(wave->f);
+		wave->f = NULL;
+		LALFree(wave->a);
+		wave->a = NULL;
+		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+	}
+
+	// allocating the phase array
+	if ((wave->phi = (REAL8TimeSeries *) LALMalloc(
+			sizeof(REAL8TimeSeries))) == NULL) {
+		TRY(LALSDestroyVector(status->statusPtr, &(wave->f->data)), status);
+		LALFree(wave->f);
+		wave->f = NULL;
+		TRY(LALSDestroyVectorSequence(status->statusPtr, &(wave->a->data)), status);
+		LALFree(wave->a);
+		wave->a = NULL;
+		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+	}
+	memset(wave->phi, 0, sizeof(REAL4TimeSeries));
+	LALDCreateVector(status->statusPtr, &(wave->phi->data), in.length);
+	if(wave->phi->data == NULL) {
+		TRY(LALSDestroyVector(status->statusPtr, &(wave->f->data)), status);
+		LALFree(wave->f);
+		wave->f = NULL;
+		TRY(LALSDestroyVectorSequence(status->statusPtr, &(wave->a->data)), status);
+		LALFree(wave->a);
+		wave->a = NULL;
+		LALFree(wave->phi);
+		wave->phi = NULL;
+		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+	}
+
+	// allocating the polarisation shift array
+	if ((wave->shift = (REAL4TimeSeries *) LALMalloc(
+			sizeof(REAL4TimeSeries))) == NULL) {
+		TRY(LALSDestroyVector(status->statusPtr, &(wave->f->data)), status);
+		LALFree(wave->f);
+		wave->f = NULL;
+		TRY(LALSDestroyVectorSequence(status->statusPtr, &(wave->a->data)), status);
+		LALFree(wave->a);
+		wave->a = NULL;
+		TRY(LALDDestroyVector(status->statusPtr, &(wave->phi->data)), status);
+		LALFree(wave->phi);
+		wave->phi = NULL;
+		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+	}
+	memset(wave->shift, 0, sizeof(REAL4TimeSeries));
+	LALSCreateVector(status->statusPtr, &(wave->shift->data), in.length);
+	if (wave->shift->data == NULL) {
+		TRY(LALSDestroyVector(status->statusPtr, &(wave->f->data)), status);
+		LALFree(wave->f);
+		wave->f = NULL;
+		TRY(LALSDestroyVectorSequence(status->statusPtr, &(wave->a->data)), status);
+		LALFree(wave->a);
+		wave->a = NULL;
+		TRY(LALDDestroyVector(status->statusPtr, &(wave->phi->data)), status);
+		LALFree(wave->phi);
+		wave->phi = NULL;
+		LALFree(wave->shift);
+		wave->shift = NULL;
+		ABORT(status, LALINSPIRALH_EMEM, LALINSPIRALH_MSGEMEM);
+	}
 	DETATCHSTATUSPTR(status);
 	RETURN(status);
 }
 
-void LALSTPNQM_Destroy_CoherentGW(LALStatus *status, CoherentGW *wave) {
-	INITSTATUS(status, "LALSTPNQM_Destroy_CoherentGW", LALSTPNQM_WAVEFORM_INTERFACEC);
+void LALSQTPNDestroyCoherentGW(LALStatus *status, CoherentGW *wave) {
+	INITSTATUS(status, "LALSQTPNDestroyCoherentGW", LALSQTPNWAVEFORMINTERFACEC);
 	ATTATCHSTATUSPTR(status);
 	TRY(LALSDestroyVector(status->statusPtr, &(wave->f->data)), status);
 	LALFree(wave->f);
@@ -277,33 +316,33 @@ void LALSTPNQM_Destroy_CoherentGW(LALStatus *status, CoherentGW *wave) {
 	RETURN(status);
 }
 
-void LALSTPNQM_Fill_Params(LALStatus *status, InspiralTemplate *params,
-		PPNParamStruc *ppnParams, LALSTPNQM_Waveform_Params *wave) {
-	INITSTATUS(status, "LALSTPNQM_Fill_Params", LALSTPNQM_WAVEFORM_INTERFACEC);
+void LALSQTPNFillParams(LALStatus *status, LALSQTPNWaveformParams *wave,
+		InspiralTemplate *params, PPNParamStruc *ppnParams) {
+	INITSTATUS(status, "LALSQTPNFillParams", LALSQTPNWAVEFORMINTERFACEC);
 	wave->mass[0] = params->mass1;
 	wave->mass[1] = params->mass2;
-	wave->total_Mass = wave->mass[0] + wave->mass[1];
-	wave->mu = wave->mass[0] * wave->mass[1] / wave->total_Mass;
-	wave->eta = wave->mu / wave->total_Mass;
-	wave->chirp_Mass = wave->total_Mass * pow(wave->eta, 3. / 5.);
-	wave->chi_Amp[0] = wave->chi_Amp[1] = 0.;
+	wave->totalMass = wave->mass[0] + wave->mass[1];
+	wave->mu = wave->mass[0] * wave->mass[1] / wave->totalMass;
+	wave->eta = wave->mu / wave->totalMass;
+	wave->chirpMass = wave->totalMass * pow(wave->eta, 3. / 5.);
+	wave->chiAmp[0] = wave->chiAmp[1] = 0.;
 	INT2 i;
 	for (i = 0; i < 3; i++) {
 		wave->chi[0][i] = params->spin1[i];
 		wave->chi[1][i] = params->spin2[i];
-		wave->chi_Amp[0] += SQR(wave->chi[0][i]);
-		wave->chi_Amp[1] += SQR(wave->chi[1][i]);
+		wave->chiAmp[0] += SQR(wave->chi[0][i]);
+		wave->chiAmp[1] += SQR(wave->chi[1][i]);
 	}
-	wave->chi_Amp[0] = sqrt(wave->chi_Amp[0]);
-	wave->chi_Amp[1] = sqrt(wave->chi_Amp[1]);
+	wave->chiAmp[0] = sqrt(wave->chiAmp[0]);
+	wave->chiAmp[1] = sqrt(wave->chiAmp[1]);
 	for (i = 0; i < 3; i++) {
-		if (wave->chi_Amp[0] != 0.) {
-			wave->chih[0][i] = wave->chi[0][i] / wave->chi_Amp[0];
+		if (wave->chiAmp[0] != 0.) {
+			wave->chih[0][i] = wave->chi[0][i] / wave->chiAmp[0];
 		} else {
 			wave->chih[0][i] = 0.;
 		}
-		if (wave->chi_Amp[1] != 0.) {
-			wave->chih[1][i] = wave->chi[1][i] / wave->chi_Amp[1];
+		if (wave->chiAmp[1] != 0.) {
+			wave->chih[1][i] = wave->chi[1][i] / wave->chiAmp[1];
 		} else {
 			wave->chih[1][i] = 0.;
 		}
@@ -313,13 +352,13 @@ void LALSTPNQM_Fill_Params(LALStatus *status, InspiralTemplate *params,
 	wave->distance = params->distance;
 	wave->inclination = params->inclination;
 	wave->phi = 0.;
-	wave->signal_Amp = params->signalAmplitude * LAL_PC_SI * 1e6;
-	wave->lower_Freq = params->fLower;
+	wave->signalAmp = params->signalAmplitude * LAL_PC_SI * 1e6;
+	wave->lowerFreq = params->fLower;
 	wave->order = params->order;
 	if (spin_Component != 0)
-		spin_Component |= SO_Comp;
-	wave->spin_Component = spin_Component;
-	wave->sampling_Time = ppnParams->deltaT;
-	wave->sampling_Freq = 1. / wave->sampling_Time;
+		spin_Component |= LALSQTPN_SOComp;
+	wave->spinComponent = spin_Component;
+	wave->samplingTime = ppnParams->deltaT;
+	wave->samplingFreq = 1. / wave->samplingTime;
 	RETURN(status);
 }

@@ -13,6 +13,7 @@ Debug
 temp*
 proba*
 waves
+latex
 
 # fordítási és futtatási fájlok
 lal*
@@ -24,3 +25,5 @@ own*
 *~
 *.cx
 *.hx
+*.zip
+*.pdf
