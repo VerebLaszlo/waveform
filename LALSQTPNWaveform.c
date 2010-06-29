@@ -5,8 +5,8 @@
  * @date 2010.05.21.
  */
 
-#include "LALSQTPNWaveform.h"
-#include "LALSQTPNIntegrator.h"
+#include <lal/LALSQTPNWaveform.h>
+#include <lal/LALSQTPNIntegrator.h>
 
 NRCSID (LALSQTPNWAVEFORMC, "$Id LALSQTPN_Waveform.c$");
 
@@ -48,6 +48,7 @@ NRCSID (LALSQTPNWAVEFORMC, "$Id LALSQTPN_Waveform.c$");
 
 void LALSQTPNFillCoefficients(LALStatus *status, LALSQTPNWaveformParams * const params) {
 	INITSTATUS(status, "LALSQTPNFillCoefficients", LALSQTPNWAVEFORMC);
+	ASSERT(params != NULL, status, LALSQTPN_ENULL, LALSQTPN_MSGWAVEPARAMSNULL);
 
 	// variable declaration and initialization
 	REAL8 thetahat = 1039. / 4620.;
@@ -66,7 +67,7 @@ void LALSQTPNFillCoefficients(LALStatus *status, LALSQTPNWaveformParams * const 
 	// calculating the coefficients
 	params->coeff.domegaGlobal = params->eta * 96. / 5.;
 	for (i = LAL_PNORDER_NEWTONIAN; i < LAL_PNORDER_PSEUDO_FOUR; i += 2) {
-		params->coeff.meco[i] = -5. * params->eta * (REAL8) (i + 2) / 3.;
+		params->coeff.meco[i] = -0.5 * params->eta * (REAL8) (i + 2) / 3.;
 	}
 	switch (params->order) {
 		case LAL_PNORDER_THREE_POINT_FIVE:
@@ -152,8 +153,9 @@ int LALSQTPNDerivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * par
 	LALSQTPNWaveformParams *params = param;
 
 	// variable declaration and initialization
+	t = t;
 	const REAL8 *chi_p[2] = { values + LALSQTPN_CHIH1_1, values + LALSQTPN_CHIH2_1 };
-	INT2 i, j, k; // indexes
+	UINT2 i, j, k; // indexes
 	memset(dvalues, 0, LALSQTPN_NUM_OF_VAR * sizeof(REAL8));
 	REAL8 omegaPowi_3[8];
 	omegaPowi_3[0] = 1.;
@@ -170,11 +172,12 @@ int LALSQTPNDerivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * par
 	}
 
 	// calculating domega and MECO without the spin components
-	for (i = params->order; i >= LAL_PNORDER_NEWTONIAN; i--) {
+	//for (i = params->order; i >= LAL_PNORDER_NEWTONIAN; i--) {
+	for (i = LAL_PNORDER_NEWTONIAN; i <= params->order; i++) {
 		dvalues[LALSQTPN_OMEGA] += params->coeff.domega[i] * omegaPowi_3[i];
 	}
 	dvalues[LALSQTPN_MECO] += params->coeff.meco[0] / omegaPowi_3[1];
-	for (i = LAL_PNORDER_NEWTONIAN; i <= params->order; i += 2) {
+	for (i = LAL_PNORDER_NEWTONIAN + 2; i <= params->order; i += 2) {
 		dvalues[LALSQTPN_MECO] += params->coeff.meco[i] * omegaPowi_3[i - 1];
 	}
 
@@ -198,14 +201,13 @@ int LALSQTPNDerivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * par
 				// SS for dchih
 				for (i = 0; i < 2; i++) {
 					k = (i + 1) % 2; // the opposite index
-					VECTOR_PRODUCT3W(chi_p[k], chi_p[i], params->coeff.dchihSS[i], chih1xchih2[i]);
+					VECTOR_PRODUCT3(chi_p[k], chi_p[i], chih1xchih2[i]);
 					VECTOR_PRODUCT3(values + LALSQTPN_LNH_1, chi_p[i], LNhxchih[i]);
 					for (j = 0; j < 3; j++) {
 						// the 3*index is used, to acces the first spin, if index=0,
 						// otherwise the second spin
-						dvalues[LALSQTPN_CHIH1_1 + 3 * i + j] += (chih1xchih2[i][j] - 3.
-								* params->coeff.dchihSS[i] * LNhchih[k]
-								* LNhxchih[i][j]) * omegaPowi_3[6];
+						dvalues[LALSQTPN_CHIH1_1 + 3 * i + j] += params->coeff.dchihSS[i] *
+								(chih1xchih2[i][j] - 3. * LNhchih[k] * LNhxchih[i][j]) * omegaPowi_3[6];
 					}
 				}
 			}
@@ -217,7 +219,6 @@ int LALSQTPNDerivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * par
 				}
 			}
 			if ((params->spinComponent & LALSQTPN_QMComp) == LALSQTPN_QMComp) {
-				// QM for dchih
 				QM_Omega = params->coeff.domegaQMConst;
 				for (i = 0; i < 2; i++) {
 					QM_Omega += params->coeff.domegaQM[i] * LNhchih[i];
@@ -270,6 +271,8 @@ int LALSQTPNDerivator(REAL8 t, const REAL8 values[], REAL8 dvalues[], void * par
 
 void LALSQTPNGenerator(LALStatus *status, CoherentGW *waveform, LALSQTPNWaveformParams *params) {
 	INITSTATUS(status, "LALSQTPNGenerator", LALSQTPNWAVEFORMC);
+	ASSERT(params != NULL, status, LALSQTPN_ENULL, LALSQTPN_MSGWAVEPARAMSNULL);
+	ASSERT(waveform != NULL, status, LALSQTPN_ENULL, LALSQTPN_MSGWAVESTRUCTNULL);
 	ATTATCHSTATUSPTR(status);
 
 	// variable declaration and initialization
@@ -282,7 +285,6 @@ void LALSQTPNGenerator(LALStatus *status, CoherentGW *waveform, LALSQTPNWaveform
 	const REAL8 step = params->samplingTime / geometrized_m_total;
 	REAL8 values[LALSQTPN_NUM_OF_VAR], dvalues[LALSQTPN_NUM_OF_VAR]; // + 1 for MECO
 	LALSQTPNIntegratorSystem integrator;
-	ERR_STR_END("runge_kutta_init");
 	TRY(LALSQTPNIntegratorInit(status->statusPtr,
 			&integrator, LALSQTPN_NUM_OF_VAR - 1, params, LALSQTPNDerivator), status);
 
@@ -302,17 +304,15 @@ void LALSQTPNGenerator(LALStatus *status, CoherentGW *waveform, LALSQTPNWaveform
 	LALSQTPNDerivator(time, values, dvalues, params);
 	dvalues[LALSQTPN_MECO] = -1.; // to be able to start the loop
 	i = 0;
-	while (dvalues[LALSQTPN_MECO] < 0. && dvalues[LALSQTPN_OMEGA] > 0.0 && SQR(values[LALSQTPN_LNH_3])
-			< 1. - LNhztol && values[LALSQTPN_OMEGA] / freq_Step < params->samplingFreq
-			/ 2.) {
+	do {
 		alpha = atan2(values[LALSQTPN_LNH_2], values[LALSQTPN_LNH_1]);
 		amp = params->signalAmp * pow(values[LALSQTPN_OMEGA], 2. / 3.);
 
 		// writing the output
 		if (waveform->h) {
-			temp1 = -0.5 * amp * cos(2. * (values[LALSQTPN_PHASE] - params->phi))
+			temp1 = -0.5 * amp * cos(2. * values[LALSQTPN_PHASE])
 					* (values[LALSQTPN_LNH_3] * values[LALSQTPN_LNH_3] + 1.);
-			temp2 = amp * sin(2. * values[LALSQTPN_PHASE] - params->phi) * values[LALSQTPN_LNH_3];
+			temp2 = amp * sin(2. * values[LALSQTPN_PHASE]) * values[LALSQTPN_LNH_3];
 			waveform->h->data->data[2 * i] = temp1 * cos(2. * alpha) + temp2
 					* sin(2. * alpha);
 			waveform->h->data->data[2 * i + 1] = temp1 * sin(2. * alpha)
@@ -323,7 +323,7 @@ void LALSQTPNGenerator(LALStatus *status, CoherentGW *waveform, LALSQTPNWaveform
 			waveform->a->data->data[2 * i] = -amp * 0.5 * (1. + values[LALSQTPN_LNH_3]
 					* values[LALSQTPN_LNH_3]);
 			waveform->a->data->data[2 * i + 1] = -amp * values[LALSQTPN_LNH_3];
-			waveform->phi->data->data[i] = 2. * values[LALSQTPN_PHASE];
+			waveform->phi->data->data[i] = 2. * (values[LALSQTPN_PHASE] - params->phi);
 			waveform->shift->data->data[i] = 2. * alpha;
 		}
 		waveform->f->data->data[i] = values[LALSQTPN_OMEGA] / freq_Step;
@@ -345,7 +345,9 @@ void LALSQTPNGenerator(LALStatus *status, CoherentGW *waveform, LALSQTPNWaveform
 		if (i == waveform->f->data->length + 1) {
 			break;
 		}
-	}
+	} while (dvalues[LALSQTPN_MECO] < 0. && dvalues[LALSQTPN_OMEGA] > 0.0 && SQR(values[LALSQTPN_LNH_3])
+			< 1. - LNhztol && values[LALSQTPN_OMEGA] / freq_Step < params->samplingFreq
+			/ 2.);
 	waveform->f->data->length = i;
 	DETATCHSTATUSPTR(status);
 	RETURN(status);

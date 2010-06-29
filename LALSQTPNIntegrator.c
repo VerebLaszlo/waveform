@@ -5,10 +5,9 @@
  * @date 2010.05.21.
  */
 
-#include "LALSQTPNIntegrator.h"
-#include "util_debug.h"
+#include "lal/LALSQTPNIntegrator.h"
 
-NRCSID (LALSQTPNINTEGRATORC, "$Id LALSQTPNIntegrator.h$");
+NRCSID (LALSQTPNINTEGRATORC, "$Id LALSQTPNIntegrator.c$");
 
 void LALSQTPNIntegratorInit(LALStatus *status,
 		LALSQTPNIntegratorSystem *integrator, INT2 num, void *params,

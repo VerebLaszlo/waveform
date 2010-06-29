@@ -17,6 +17,7 @@ latex
 
 # fordítási és futtatási fájlok
 lal*
+!lal-doxy*
 own*
 *.b
 *out

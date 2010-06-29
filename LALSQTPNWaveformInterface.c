@@ -1,15 +1,14 @@
 /**
  * @file LALSQTPNWaveformInterface.c
- *		Contains the interfaces to the user and to the other part of the code.
+ *		Contains function definitions to integrate the SpinQuadTaylor code into the other parts of the LALSuit.
+ *	If you want to run the program use the LALSQTPNWaveformTest.c file int the
+ *	test directory.
  * @author László Veréb
- * @date 2010.05.21.
+ * @date 2010.06.27.
  */
 
-#include "LALSQTPNWaveformInterface.h"
-#include "LALSQTPNWaveform.h"
-
-REAL8 lapultsag[2]; ///< \bug át kell rakni a paraméterekhez
-LALSQTPNChooseSpinComponent spin_Component;///< \bug át kell rakni a paraméterekhez
+#include <lal/LALSQTPNWaveformInterface.h>
+#include <lal/LALSQTPNWaveform.h>
 
 NRCSID (LALSQTPNWAVEFORMINTERFACEC, "$Id LALSQTPNWaveformInterface.c$");
 
@@ -20,83 +19,11 @@ NRCSID (LALSQTPNWAVEFORMINTERFACEC, "$Id LALSQTPNWaveformInterface.c$");
  */
 #define SQR(a) ((a)*(a))
 
-void interface(LALStatus *status, CoherentGW * thewaveform, SimInspiralTable *injParams, PPNParamStruc *ppnParams) {
-	INITSTATUS(status, "interface", LALSQTPNWAVEFORMINTERFACEC);
-	ATTATCHSTATUSPTR(status);
-	ASSERT(injParams, status, GENERATEINSPIRALH_ENULL, GENERATEINSPIRALH_MSGENULL);
-	InspiralTemplate inspiralParams; // structure for inspiral package
-	CHAR              warnMsg[1024];
-	TRY(LALGetApproximantFromString(status->statusPtr, injParams->waveform, &inspiralParams.approximant), status);
-	TRY(LALGetOrderFromString(status->statusPtr, injParams->waveform, &inspiralParams.order), status);
-	/* We fill ppnParams */
-	TRY(LALGenerateInspiralPopulatePPN(status->statusPtr, ppnParams, injParams), status);
-	/* we fill inspiralParams structure as well.*/
-	TRY(LALGenerateInspiralPopulateInspiral(status->statusPtr, &inspiralParams, injParams, ppnParams), status);
-	/* the waveform generation itself */
-	TRY(LALSQTPNWaveformForInjection(status->statusPtr, thewaveform, &inspiralParams, ppnParams), status);
-	/* we populate the simInspiral table with the fFinal needed for
-	 template normalisation. */
-	injParams->f_final = inspiralParams.fFinal;/* If no waveform has been generated. (AmpCorPPN fills waveform.h) */
-	if ( thewaveform->a == NULL && inspiralParams.approximant != AmpCorPPN ) {
-		snprintf( warnMsg, sizeof(warnMsg)/sizeof(*warnMsg),
-				"No waveform generated (check lower frequency)\n");
-		LALInfo( status, warnMsg );
-		ABORT( status, LALINSPIRALH_ENOWAVEFORM, LALINSPIRALH_MSGENOWAVEFORM );
-	}
-	/* If sampling problem. (AmpCorPPN may not be compatible) */
-	if ( ppnParams->dfdt > 2.0 && inspiralParams.approximant != AmpCorPPN ) {
-		snprintf( warnMsg, sizeof(warnMsg)/sizeof(*warnMsg),
-				"Waveform sampling interval is too large:\n"
-				"\tmaximum df*dt = %f", ppnParams->dfdt );
-		LALInfo( status, warnMsg );
-		ABORT( status, GENERATEINSPIRALH_EDFDT, GENERATEINSPIRALH_MSGEDFDT );
-	}
-
-	/* Some info should add everything (spin and so on) */
-	snprintf( warnMsg, sizeof(warnMsg)/sizeof(*warnMsg),
-		"Injected waveform parameters:\n"
-		"ppnParams->mTot\t= %"LAL_REAL4_FORMAT"\n"
-		"ppnParams->eta\t= %"LAL_REAL4_FORMAT"\n"
-		"ppnParams->d\t= %"LAL_REAL4_FORMAT"\n"
-		"ppnParams->inc\t= %"LAL_REAL4_FORMAT"\n"
-		"ppnParams->phi\t= %"LAL_REAL4_FORMAT"\n"
-		"ppnParams->psi\t= %"LAL_REAL4_FORMAT"\n"
-		"ppnParams->fStartIn\t= %"LAL_REAL4_FORMAT"\n"
-		"ppnParams->fStopIn\t= %"LAL_REAL4_FORMAT"\n"
-		"ppnParams->position.longitude\t= %"LAL_REAL8_FORMAT"\n"
-		"ppnParams->position.latitude\t= %"LAL_REAL8_FORMAT"\n"
-		"ppnParams->position.system\t= %d\n"
-		"ppnParams->epoch.gpsSeconds\t= %"LAL_INT4_FORMAT"\n"
-		"ppnParams->epoch.gpsNanoSeconds\t= %"LAL_INT4_FORMAT"\n"
-		"ppnParams->tC\t= %"LAL_REAL8_FORMAT"\n"
-		"ppnParams->dfdt\t =%"LAL_REAL4_FORMAT"\n",
-		ppnParams->mTot,
-		ppnParams->eta,
-		ppnParams->d,
-		ppnParams->inc,
-		ppnParams->phi,
-		ppnParams->psi,
-		ppnParams->fStartIn,
-		ppnParams->fStopIn,
-		ppnParams->position.longitude,
-		ppnParams->position.latitude,
-		ppnParams->position.system,
-		ppnParams->epoch.gpsSeconds,
-		ppnParams->epoch.gpsNanoSeconds,
-		ppnParams->tc,
-		ppnParams->dfdt );
-	LALInfo( status, warnMsg );
-
-	DETATCHSTATUSPTR(status);
-	RETURN(status);
-}
-
 void LALSQTPNWaveformForInjection(LALStatus *status, CoherentGW *waveform,
 		InspiralTemplate *params, PPNParamStruc *ppnParams) {
 
 	// variable declaration and initialization
 	UINT4 count, i;
-	REAL8 phiC; // phase at coalescence
 	InspiralInit paramsInit;
 
 	INITSTATUS(status, "LALSQTPNInterface", LALSQTPNWAVEFORMINTERFACEC);
@@ -116,33 +43,23 @@ void LALSQTPNWaveformForInjection(LALStatus *status, CoherentGW *waveform,
 
 	// filling the parameters
 	LALSQTPNFillParams(status->statusPtr, &wave_Params, params, ppnParams);
-	if (status->statusCode) {
+	BEGINFAIL(status) {
 		LALSQTPNDestroyCoherentGW(status->statusPtr, waveform);
-		ABORT(status, status->statusCode, status->statusDescription);
-	}
+	} ENDFAIL(status);
 
 	// calling the engine function
 	LALSQTPNGenerator(status->statusPtr, waveform, &wave_Params);
-	if (status->statusCode) {
+	BEGINFAIL(status) {
 		LALSQTPNDestroyCoherentGW(status->statusPtr, waveform);
-		ABORT(status, status->statusCode, status->statusDescription);
-	}
+	} ENDFAIL(status);
 	count = waveform->f->data->length;
-	/* Check an empty waveform hasn't been returned */
-	/*for (i = 0; i < waveform->f->data->length; i++) {
-	 if (waveform->phi->data->data[i] != 0.0)
-	 break;
-	 }*/
 
 	{
 		if (waveform->a != NULL) {
-			/// \bug meg kell nézi, hogy ez miért nem kell!!!!
-			/*phiC = waveform->phi->data->data[waveform->f->data->length - 1];
-
 			for (i = 0; i < waveform->f->data->length; i++) {
-				waveform->phi->data->data[i] = -phiC
-						+ waveform->phi->data->data[i] + ppnParams->phi;
-			}*/
+				// (PPNParamStruct)ppnParams->phi === (InspiralTemplate)params->startPhase === (SimInspiralTable)injparams/this_event->coa_phase it is set to 0 in LALSQTPNWaveformTest.c at line 83.
+				waveform->phi->data->data[i] = waveform->phi->data->data[i] + ppnParams->phi - waveform->phi->data->data[waveform->f->data->length-1];
+			}
 			waveform->a->deltaT = waveform->f->deltaT = waveform->phi->deltaT
 					= waveform->shift->deltaT = 1. / params->tSampling;
 
@@ -179,10 +96,11 @@ void LALSQTPNWaveformForInjection(LALStatus *status, CoherentGW *waveform,
 
 void LALSQTPNAllocateCoherentGW(LALStatus *status, CoherentGW *wave, UINT4 length) {
 	INITSTATUS(status, "LALSQTPNAllocateCoherentGW", LALSQTPNWAVEFORMINTERFACEC);
+	ASSERT(wave != NULL, status, LALSQTPN_ENULL, LALSQTPN_MSGWAVESTRUCTNULL);
+	ASSERT(length > 0, status, LALSQTPN_ZEROLENGTH, LALSQTPN_MSGZEROLENGTH);
 	ATTATCHSTATUSPTR(status);
 	CreateVectorSequenceIn in;
 	/* Make sure parameter and waveform structures exist. */
-	ASSERT(wave, status, LALINSPIRALH_ENULL, LALINSPIRALH_MSGENULL);
 
 	in.length = length;
 	in.vectorLength = 2;
@@ -297,6 +215,7 @@ void LALSQTPNAllocateCoherentGW(LALStatus *status, CoherentGW *wave, UINT4 lengt
 
 void LALSQTPNDestroyCoherentGW(LALStatus *status, CoherentGW *wave) {
 	INITSTATUS(status, "LALSQTPNDestroyCoherentGW", LALSQTPNWAVEFORMINTERFACEC);
+	ASSERT(wave != NULL, status, LALSQTPN_ENULL, LALSQTPN_MSGWAVESTRUCTNULL);
 	ATTATCHSTATUSPTR(status);
 	TRY(LALSDestroyVector(status->statusPtr, &(wave->f->data)), status);
 	LALFree(wave->f);
@@ -319,6 +238,9 @@ void LALSQTPNDestroyCoherentGW(LALStatus *status, CoherentGW *wave) {
 void LALSQTPNFillParams(LALStatus *status, LALSQTPNWaveformParams *wave,
 		InspiralTemplate *params, PPNParamStruc *ppnParams) {
 	INITSTATUS(status, "LALSQTPNFillParams", LALSQTPNWAVEFORMINTERFACEC);
+	ASSERT(wave != NULL, status, LALSQTPN_ENULL, LALSQTPN_MSGWAVEPARAMSNULL);
+	ASSERT(params != NULL, status, LALSQTPN_ENULL, LALSQTPN_MSGINSPIRALTEMPLATE);
+	ASSERT(ppnParams != NULL, status, LALSQTPN_ENULL, LALSQTPN_MSGPPNPARAMS);
 	wave->mass[0] = params->mass1;
 	wave->mass[1] = params->mass2;
 	wave->totalMass = wave->mass[0] + wave->mass[1];
@@ -347,18 +269,18 @@ void LALSQTPNFillParams(LALStatus *status, LALSQTPNWaveformParams *wave,
 			wave->chih[1][i] = 0.;
 		}
 	}
-	wave->flatness[0] = lapultsag[0];
-	wave->flatness[1] = lapultsag[1];
+	wave->flatness[0] = params->flatness[0];
+	wave->flatness[1] = params->flatness[1];
 	wave->distance = params->distance;
 	wave->inclination = params->inclination;
-	wave->phi = 0.;
-	wave->signalAmp = params->signalAmplitude * LAL_PC_SI * 1e6;
 	wave->lowerFreq = params->fLower;
-	wave->order = params->order;
-	if (spin_Component != 0)
-		spin_Component |= LALSQTPN_SOComp;
-	wave->spinComponent = spin_Component;
 	wave->samplingTime = ppnParams->deltaT;
 	wave->samplingFreq = 1. / wave->samplingTime;
+	wave->phi = 0.;
+	wave->signalAmp = 4. * wave->totalMass * wave->eta * LAL_MRSUN_SI / wave->distance;
+	wave->order = params->order;
+	wave->spinComponent = *((LALSQTPNChooseSpinComponent*)(params->settings));
+	if (wave->spinComponent != 0)
+		wave->spinComponent |= LALSQTPN_SOComp;
 	RETURN(status);
 }
